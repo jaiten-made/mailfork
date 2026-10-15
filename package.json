@@ -4,9 +4,12 @@
   "type": "module",
   "packageManager": "pnpm@10.29.3",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:dashes": "scripts/check-dashes.sh",
+    "check": "pnpm check:dashes && pnpm build && pnpm test"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
