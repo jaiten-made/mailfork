@@ -9,6 +9,14 @@ type Outcome =
 
 const REJECTED = { kind: "rejected", reason: expect.any(String) };
 
+function forwardedAsProfile(profileAddress: string): Outcome {
+  return {
+    kind: "forwarded",
+    to: PERSONAL_INBOX,
+    headers: { "x-profile-address": profileAddress },
+  };
+}
+
 function inMemoryKv(entries: Record<string, string>): KVNamespace {
   const kv = { get: async (key: string) => entries[key] ?? null };
   return kv as unknown as KVNamespace;
@@ -53,11 +61,7 @@ describe("email handler", () => {
     });
 
     expect(outcomes).toEqual([
-      {
-        kind: "forwarded",
-        to: PERSONAL_INBOX,
-        headers: { "x-profile-address": "quiet.otter.42@profile.example" },
-      },
+      forwardedAsProfile("quiet.otter.42@profile.example"),
     ]);
   });
 
@@ -67,11 +71,7 @@ describe("email handler", () => {
     });
 
     expect(outcomes).toEqual([
-      {
-        kind: "forwarded",
-        to: PERSONAL_INBOX,
-        headers: { "x-profile-address": "quiet.otter.42@profile.example" },
-      },
+      forwardedAsProfile("quiet.otter.42@profile.example"),
     ]);
   });
 
@@ -98,6 +98,15 @@ describe("email handler", () => {
     });
 
     expect(outcomes).toEqual([REJECTED]);
+  });
+
+  it("gives a Retired Address the same rejection reason as one never issued", async () => {
+    const retired = await deliver("faded.fox.07@profile.example", {
+      "faded.fox.07@profile.example": "retired",
+    });
+    const neverIssued = await deliver("guess@profile.example");
+
+    expect(retired).toEqual(neverIssued);
   });
 
   it("rejects a plus-addressed recipient even when its base address is live", async () => {

@@ -5,7 +5,7 @@ export interface NormalisedAddress {
 }
 
 /**
- * Lowercases an address and splits it at the last `@`.
+ * Trims and lowercases an address, then splits it at the last `@`.
  * Returns null if either side of the `@` is empty or there is no `@`.
  */
 export function normaliseAddress(raw: string): NormalisedAddress | null {
