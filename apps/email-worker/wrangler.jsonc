@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "private-profile-email",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-12",
+  "kv_namespaces": [
+    {
+      // Value format: docs/kv-address-list.md
+      "binding": "PROFILE_ADDRESSES",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ],
+  "vars": {
+    "SYSTEM_ADDRESSES": "postmaster,abuse"
+  }
+  // PERSONAL_INBOX is a secret so it never lands in git:
+  //   pnpm exec wrangler secret put PERSONAL_INBOX
+}

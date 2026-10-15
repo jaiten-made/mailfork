@@ -1,0 +1,12 @@
+{
+  "name": "@private-profile/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@private-profile/shared": "workspace:*"
+  }
+}
