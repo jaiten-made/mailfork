@@ -1,3 +1,7 @@
+## Git flow
+
+Commit on `feature/<issue>-<slug>`, cut from `develop`, and open the PR into `develop`. `main` only takes releases from `develop`. The pre-commit hook in `.githooks/` (turned on by `pnpm install`) enforces this.
+
 ## Agent skills
 
 ### Issue tracker
