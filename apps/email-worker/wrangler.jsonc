@@ -3,10 +3,15 @@
   "name": "private-profile-email",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-12",
+  // Mail arrives only through Email Routing, so there is no public HTTP URL.
+  "workers_dev": false,
+  "preview_urls": false,
   "kv_namespaces": [
     {
       // Value format: docs/kv-address-list.md
       "binding": "PROFILE_ADDRESSES",
+      // From `pnpm exec wrangler kv namespace create PROFILE_ADDRESSES`.
+      // Not a secret, but deploy fails until it is filled in: docs/provisioning.md
       "id": "REPLACE_WITH_KV_NAMESPACE_ID"
     }
   ],
