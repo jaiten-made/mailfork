@@ -1,1 +1,6 @@
-export { normaliseAddress, type NormalisedAddress } from "./address-rules.ts";
+export {
+  generateLocalPart,
+  normaliseAddress,
+  type NormalisedAddress,
+  type RandomSource,
+} from "./address-rules.ts";
