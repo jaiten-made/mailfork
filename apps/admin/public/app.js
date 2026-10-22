@@ -1,4 +1,5 @@
-// The admin page: create a Profile from a Label, list live and Retired
+// The admin page: create a Profile from a Label and, optionally, a Custom
+// Address, list live and Retired
 // Profiles, copy a Profile Address, rename a Label and Retire a Profile, all
 // through the JSON API.
 
@@ -256,6 +257,50 @@ function showRetired(profile) {
   notice.focus();
 }
 
+// A Custom Address is checked against the API as the Owner types, so a bad
+// or already issued address shows before the form is submitted.
+const CHECK_DELAY_MS = 250;
+let customCheck = null;
+let customTimer;
+
+function showCustomCheck(error, profileAddress) {
+  const input = $("create-custom");
+  showError($("custom-error"), error);
+  if (error) input.setAttribute("aria-invalid", "true");
+  else input.removeAttribute("aria-invalid");
+  const preview = $("custom-preview");
+  preview.textContent = profileAddress ? `The Profile Address will be ${profileAddress}.` : "";
+  preview.hidden = !profileAddress;
+}
+
+/** Checks the Custom Address, resolving to its error or "" if it is fine. */
+function checkCustom() {
+  const value = $("create-custom").value;
+  if (value.trim() === "") {
+    showCustomCheck("", "");
+    return Promise.resolve("");
+  }
+  if (customCheck?.value === value) return customCheck.result;
+  const result = api("/api/custom-addresses/check", {
+    method: "POST",
+    body: JSON.stringify({ customLocalPart: value }),
+  }).then(
+    ({ profileAddress }) => ({ error: "", profileAddress }),
+    (failure) => ({ error: failure.message, profileAddress: "" }),
+  ).then(({ error, profileAddress }) => {
+    // A slower, older check must not overwrite a newer one.
+    if (customCheck?.value === value) showCustomCheck(error, profileAddress);
+    return error;
+  });
+  customCheck = { value, result };
+  return result;
+}
+
+$("create-custom").oninput = () => {
+  clearTimeout(customTimer);
+  customTimer = setTimeout(checkCustom, CHECK_DELAY_MS);
+};
+
 $("create-form").onsubmit = async (event) => {
   event.preventDefault();
   const input = $("create-label");
@@ -269,15 +314,27 @@ $("create-form").onsubmit = async (event) => {
     return;
   }
 
+  clearTimeout(customTimer);
+  const custom = $("create-custom");
+  if (await checkCustom()) {
+    $("custom").open = true;
+    custom.focus();
+    return;
+  }
+
   button.disabled = true;
   button.textContent = "Creating";
   try {
     const profile = await api("/api/profiles", {
       method: "POST",
-      body: JSON.stringify({ label: input.value }),
+      body: JSON.stringify({ label: input.value, customLocalPart: custom.value }),
     });
     input.value = "";
     input.removeAttribute("aria-invalid");
+    custom.value = "";
+    customCheck = null;
+    showCustomCheck("", "");
+    $("custom").open = false;
     showError(error, "");
     $("retired-notice").hidden = true;
     showIssued(profile);

@@ -48,6 +48,14 @@ export interface ProfileRegistry {
     generateAddress: () => string,
     createdAt: Date,
   ): Profile;
+  /**
+   * Creates a live Profile with a Custom Address, given normalised. Returns null, creating
+   * nothing, if the address was ever issued before. The write has committed
+   * when this returns.
+   */
+  createWithCustomAddress(label: string, profileAddress: string, createdAt: Date): Profile | null;
+  /** Whether a live or Retired Profile ever had this normalised Profile Address. */
+  wasIssued(profileAddress: string): boolean;
   /** A live or Retired Profile, with retiredAt null while live. Null if there is no such Profile. */
   find(id: number): (Profile & { retiredAt: string | null }) | null;
   /** Changes only the Label of a live Profile. Returns null if there is no such live Profile. */
@@ -86,6 +94,10 @@ export function openProfileRegistry(path: string): ProfileRegistry {
     RETURNING ${PROFILE_COLUMNS}
   `);
 
+  const selectByAddress = db.prepare(`
+    SELECT 1 FROM profiles WHERE profile_address = ?
+  `);
+
   const selectById = db.prepare(`
     SELECT ${RETIRED_PROFILE_COLUMNS} FROM profiles WHERE id = ?
   `);
@@ -121,6 +133,14 @@ export function openProfileRegistry(path: string): ProfileRegistry {
         if (profile) return profile;
       }
       throw new Error("Every Generated Address tried was issued before");
+    },
+
+    createWithCustomAddress(label, profileAddress, createdAt) {
+      return toProfile(insert.get(label, profileAddress, createdAt.toISOString()));
+    },
+
+    wasIssued(profileAddress) {
+      return selectByAddress.get(profileAddress) !== undefined;
     },
 
     find(id) {

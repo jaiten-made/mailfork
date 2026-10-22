@@ -171,6 +171,34 @@ button:disabled {
   outline-color: var(--on-red);
 }
 
+.custom {
+  margin-top: 12px;
+}
+
+.custom summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 32px;
+}
+
+.custom[open] summary {
+  margin-bottom: 8px;
+}
+
+.custom input {
+  width: 100%;
+}
+
+.custom input[aria-invalid="true"] {
+  border-color: var(--on-red);
+  border-width: 2px;
+}
+
+.custom .hint {
+  margin: 8px 0 0;
+  font-size: 0.9375rem;
+}
+
 .create .error {
   margin: 10px 0 0;
   color: var(--on-red);
