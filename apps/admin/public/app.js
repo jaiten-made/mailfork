@@ -1,6 +1,6 @@
 // The admin page: create a Profile from a Label and, optionally, a Custom
-// Address, list live and Retired
-// Profiles, copy a Profile Address, rename a Label and Retire a Profile, all
+// Address, list live and Retired Profiles, copy a Profile Address, rename a
+// Label and Retire a Profile, and see or fix a failed push to Cloudflare, all
 // through the JSON API.
 
 const SIGNED_OUT = "Your Cloudflare Access sign-in has expired. Reload the page to sign in again.";
@@ -232,9 +232,44 @@ async function loadRetired() {
   }
 }
 
-function loadProfiles() {
-  return Promise.all([loadLive(), loadRetired()]);
+// Shown after a failed push until a reconcile succeeds, so the Owner doesn't
+// hand out an address that isn't working yet.
+async function loadAddressList() {
+  try {
+    const { pushFailed } = await api("/api/address-list");
+    $("push-failed").hidden = !pushFailed;
+    if (pushFailed) $("reconcile-status").textContent = "";
+  } catch {
+    // The live list shows the same failure; the banner keeps its last state.
+  }
 }
+
+function loadProfiles() {
+  return Promise.all([loadLive(), loadRetired(), loadAddressList()]);
+}
+
+async function reconcile(button, error) {
+  button.disabled = true;
+  showError(error, "");
+  $("reconcile-status").textContent = "";
+  try {
+    await api("/api/address-list/reconcile", { method: "POST" });
+    $("reconcile-status").textContent = "Cloudflare's address list matches your Profiles.";
+    return true;
+  } catch (failure) {
+    showError(error, failure.message);
+    return false;
+  } finally {
+    button.disabled = false;
+    await loadAddressList();
+  }
+}
+
+$("push-failed-retry").onclick = async () => {
+  if (await reconcile($("push-failed-retry"), $("push-failed-error"))) $("reconcile").focus();
+};
+
+$("reconcile").onclick = () => reconcile($("reconcile"), $("push-failed-error"));
 
 function showIssued(profile) {
   const issued = $("issued");

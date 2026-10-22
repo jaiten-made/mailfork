@@ -1,9 +1,10 @@
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.ts";
 import { createAccessVerifier, type AccessVerifier } from "./access.ts";
 import type { AddressListTarget, AddressStatus } from "./address-list.ts";
-import { openProfileRegistry } from "./profile-registry.ts";
+import { openProfileRegistry, type ProfileRegistry } from "./profile-registry.ts";
+import { scheduleNightly } from "./schedule.ts";
 
 const VALID_ACCESS_JWT = "valid-access-jwt";
 const CREATED_AT = "2026-10-22T09:30:00.000Z";
@@ -38,34 +39,72 @@ interface Put {
   value: AddressStatus;
 }
 
-function recordingKv(onPut?: (put: Put) => Promise<void>) {
+/**
+ * A fake KV namespace that records puts and deletes. While `fail()` is on,
+ * every call throws, as when the Cloudflare API is unreachable.
+ */
+function recordingKv(
+  onPut?: (put: Put) => Promise<void>,
+  initial: Record<string, AddressStatus> = {},
+) {
   const puts: Put[] = [];
+  const deletes: string[] = [];
+  const entries = new Map(Object.entries(initial));
+  let failing = false;
+  const unreachable = () => {
+    if (failing) throw new Error("Cloudflare API unreachable");
+  };
   const target: AddressListTarget = {
     async put(key, value) {
+      unreachable();
       await onPut?.({ key, value });
       puts.push({ key, value });
+      entries.set(key, value);
+    },
+    async delete(key) {
+      unreachable();
+      deletes.push(key);
+      entries.delete(key);
+    },
+    async keys() {
+      unreachable();
+      return [...entries.keys()];
     },
   };
-  return { target, puts };
+  return {
+    target,
+    puts,
+    deletes,
+    /** Every key and value now in the namespace. */
+    contents: () => Object.fromEntries(entries),
+    fail: (on = true) => {
+      failing = on;
+    },
+  };
 }
 
 function startAdmin({
   random = [QUIET, OTTER, 42],
   addressList = recordingKv().target,
   accessVerifier = fakeAccessVerifier,
+  registry = openProfileRegistry(":memory:"),
+  everyNight = () => {},
 }: {
   random?: number[];
   addressList?: AddressListTarget;
   accessVerifier?: AccessVerifier;
+  registry?: ProfileRegistry;
+  everyNight?: (task: () => Promise<unknown>) => void;
 } = {}) {
   let now = new Date(CREATED_AT);
   const app = createApp({
-    registry: openProfileRegistry(":memory:"),
+    registry,
     profileDomain: "profile.example",
     addressList,
     accessVerifier,
     random: scriptedRandom(random),
     now: () => now,
+    everyNight,
   });
 
   function request(
@@ -113,6 +152,9 @@ function startAdmin({
         method: "POST",
         body: JSON.stringify({ customLocalPart }),
       }),
+    reconcile: () =>
+      request("/api/address-list/reconcile", { method: "POST", body: JSON.stringify({}) }),
+    addressListStatus: async () => (await request("/api/address-list")).json(),
   };
 }
 
@@ -586,17 +628,10 @@ describe("publishing the address list", () => {
   });
 
   it("keeps the Retire when the push fails", async () => {
-    let failPuts = false;
-    const admin = startAdmin({
-      random: [QUIET, OTTER, 42],
-      addressList: {
-        async put() {
-          if (failPuts) throw new Error("Cloudflare API unreachable");
-        },
-      },
-    });
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
     const created = await admin.createProfile("Shopping");
-    failPuts = true;
+    kv.fail();
 
     const response = await admin.retire(created.id, "quiet.otter.42@profile.example");
 
@@ -605,14 +640,9 @@ describe("publishing the address list", () => {
   });
 
   it("keeps the new Profile when the push fails", async () => {
-    const admin = startAdmin({
-      random: [QUIET, OTTER, 42],
-      addressList: {
-        async put() {
-          throw new Error("Cloudflare API unreachable");
-        },
-      },
-    });
+    const kv = recordingKv();
+    kv.fail();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
 
     const response = await admin.create("Shopping");
 
@@ -620,6 +650,239 @@ describe("publishing the address list", () => {
     expect(await admin.list()).toMatchObject({
       profiles: [{ profileAddress: "quiet.otter.42@profile.example" }],
     });
+  });
+});
+
+describe("surfacing a failed push", () => {
+  it("reports no failed push before anything has gone wrong", async () => {
+    const admin = startAdmin();
+    await admin.createProfile("Shopping");
+
+    expect(await admin.addressListStatus()).toEqual({ pushFailed: false });
+  });
+
+  it("reports a failed push after a create, keeping the new Profile", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    await admin.reconcile();
+    kv.fail();
+
+    await admin.create("Shopping");
+
+    expect(await admin.addressListStatus()).toEqual({ pushFailed: true });
+    expect(await admin.list()).toMatchObject({
+      profiles: [{ profileAddress: "quiet.otter.42@profile.example" }],
+    });
+  });
+
+  it("reports a failed push after a Retire, keeping the Retire", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    const created = await admin.createProfile("Shopping");
+    kv.fail();
+
+    await admin.retire(created.id, "quiet.otter.42@profile.example");
+
+    expect(await admin.addressListStatus()).toEqual({ pushFailed: true });
+    expect(await admin.listRetired()).toMatchObject({
+      profiles: [{ profileAddress: "quiet.otter.42@profile.example" }],
+    });
+  });
+
+  it("keeps reporting the failure after a later push succeeds, since the failed address is still wrong in KV", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42, FADED, FOX, 7], addressList: kv.target });
+    const shopping = await admin.createProfile("Shopping");
+    kv.fail();
+    await admin.retire(shopping.id, "quiet.otter.42@profile.example");
+    kv.fail(false);
+
+    await admin.create("Travel");
+
+    expect(await admin.addressListStatus()).toEqual({ pushFailed: true });
+  });
+
+  it("clears the failure after a successful reconcile", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    await admin.reconcile();
+    kv.fail();
+    await admin.create("Shopping");
+    kv.fail(false);
+
+    const response = await admin.reconcile();
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ pushFailed: false });
+    expect(await admin.addressListStatus()).toEqual({ pushFailed: false });
+  });
+
+  it("keeps reporting the failure when the reconcile fails too", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    await admin.reconcile();
+    kv.fail();
+    await admin.create("Shopping");
+
+    const response = await admin.reconcile();
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({
+      error: "Couldn't update Cloudflare's address list. Try again in a moment.",
+    });
+    expect(await admin.addressListStatus()).toEqual({ pushFailed: true });
+  });
+
+  it("reports a failure when a reconcile fails on its own", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ addressList: kv.target });
+    await admin.reconcile();
+    kv.fail();
+
+    await admin.reconcile();
+
+    expect(await admin.addressListStatus()).toEqual({ pushFailed: true });
+  });
+});
+
+describe("reconciling the address list", () => {
+  /** A registry holding a live Travel and a Retired Shopping, none of it pushed. */
+  async function unpushedRegistry() {
+    const registry = openProfileRegistry(":memory:");
+    const kv = recordingKv();
+    kv.fail();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42, FADED, FOX, 7], registry, addressList: kv.target });
+    const shopping = await admin.createProfile("Shopping");
+    await admin.createProfile("Travel");
+    await admin.retire(shopping.id, "quiet.otter.42@profile.example");
+    return registry;
+  }
+
+  const MATCHING_KV: Record<string, AddressStatus> = {
+    "quiet.otter.42@profile.example": "retired",
+    "faded.fox.07@profile.example": "live",
+  };
+
+  it("makes KV exactly match the registry: live and retired statuses, and no extra keys", async () => {
+    const registry = await unpushedRegistry();
+    const kv = recordingKv(undefined, {
+      "quiet.otter.42@profile.example": "live",
+      "unknown.owl.11@profile.example": "live",
+    });
+    const admin = startAdmin({ registry, addressList: kv.target });
+
+    const response = await admin.reconcile();
+
+    expect(response.status).toBe(200);
+    expect(kv.contents()).toEqual(MATCHING_KV);
+    expect(kv.deletes).toEqual(["unknown.owl.11@profile.example"]);
+  });
+
+  it("pushes every issued address, even one KV already holds correctly", async () => {
+    const registry = await unpushedRegistry();
+    const kv = recordingKv(undefined, MATCHING_KV);
+    const admin = startAdmin({ registry, addressList: kv.target });
+    await vi.waitFor(() => expect(kv.puts).toHaveLength(2));
+    kv.puts.length = 0;
+
+    await admin.reconcile();
+
+    expect(kv.puts).toEqual(
+      expect.arrayContaining([
+        { key: "quiet.otter.42@profile.example", value: "retired" },
+        { key: "faded.fox.07@profile.example", value: "live" },
+      ]),
+    );
+    expect(kv.puts).toHaveLength(2);
+    expect(kv.deletes).toEqual([]);
+  });
+
+  it("reconciles on start-up", async () => {
+    const registry = await unpushedRegistry();
+    const kv = recordingKv(undefined, { "unknown.owl.11@profile.example": "live" });
+
+    startAdmin({ registry, addressList: kv.target });
+
+    await vi.waitFor(() => expect(kv.contents()).toEqual(MATCHING_KV));
+  });
+
+  it("reconciles on a nightly schedule", async () => {
+    const nightly: (() => Promise<unknown>)[] = [];
+    const registry = await unpushedRegistry();
+    const kv = recordingKv();
+    const admin = startAdmin({
+      registry,
+      addressList: kv.target,
+      everyNight: (task) => nightly.push(task),
+    });
+    await admin.reconcile();
+    await kv.target.put("unknown.owl.11@profile.example", "live");
+    await kv.target.delete("faded.fox.07@profile.example");
+
+    expect(nightly).toHaveLength(1);
+    await nightly[0]?.();
+
+    expect(kv.contents()).toEqual(MATCHING_KV);
+  });
+
+  it("clears a failure on a successful nightly reconcile", async () => {
+    const nightly: (() => Promise<unknown>)[] = [];
+    const kv = recordingKv();
+    const admin = startAdmin({ addressList: kv.target, everyNight: (task) => nightly.push(task) });
+    await admin.reconcile();
+    kv.fail();
+    await admin.create("Shopping");
+    kv.fail(false);
+
+    await nightly[0]?.();
+
+    expect(await admin.addressListStatus()).toEqual({ pushFailed: false });
+  });
+
+  it("does not delete an address created after a reconcile read the registry", async () => {
+    let releaseKeys: (() => void) | undefined;
+    const kv = recordingKv();
+    const keys = kv.target.keys;
+    const admin = startAdmin({
+      random: [QUIET, OTTER, 42],
+      addressList: {
+        ...kv.target,
+        keys: async () => {
+          await new Promise<void>((resolve) => {
+            releaseKeys = resolve;
+          });
+          return keys();
+        },
+      },
+    });
+    // The start-up reconcile has read the empty registry and waits to list KV.
+    await vi.waitFor(() => expect(releaseKeys).toBeDefined());
+
+    const created = admin.create("Shopping");
+    await vi.waitFor(async () => expect(await admin.list()).toMatchObject({ profiles: [{}] }));
+    releaseKeys?.();
+    await created;
+    // The fake KV settles in microtasks, so one macrotask lets the reconcile finish.
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(kv.contents()).toEqual({ "quiet.otter.42@profile.example": "live" });
+  });
+
+  it("refuses a reconcile request that is not sent as application/json", async () => {
+    const registry = await unpushedRegistry();
+    const kv = recordingKv();
+    const admin = startAdmin({ registry, addressList: kv.target });
+    await vi.waitFor(() => expect(kv.contents()).toEqual(MATCHING_KV));
+    await kv.target.put("unknown.owl.11@profile.example", "live");
+
+    const response = await admin.request("/api/address-list/reconcile", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: "{}",
+    });
+
+    expect(response.status).toBe(400);
+    expect(kv.contents()).toMatchObject({ "unknown.owl.11@profile.example": "live" });
   });
 });
 
@@ -854,6 +1117,15 @@ describe("the page", () => {
     expect(html).toContain("A Retired Address can take up to a minute to stop working.");
   });
 
+  it("has a banner for a failed push, with a way to reconcile from the page", async () => {
+    const admin = startAdmin();
+
+    const html = await (await admin.request("/")).text();
+
+    expect(html).toContain("The latest change didn't reach Cloudflare.");
+    expect(html).toContain("Push the address list again");
+  });
+
   it.each([
     ["/style.css", "text/css; charset=utf-8"],
     ["/app.js", "text/javascript; charset=utf-8"],
@@ -873,6 +1145,8 @@ describe("requiring a Cloudflare Access JWT", () => {
     ["/api/profiles", { method: "POST", body: JSON.stringify({ label: "Shopping" }) }],
     ["/api/profiles/1", { method: "PATCH", body: JSON.stringify({ label: "Shopping" }) }],
     ["/api/profiles/retired", { method: "GET" }],
+    ["/api/address-list", { method: "GET" }],
+    ["/api/address-list/reconcile", { method: "POST", body: JSON.stringify({}) }],
     [
       "/api/profiles/1/retire",
       { method: "POST", body: JSON.stringify({ confirmation: "quiet.otter.42@profile.example" }) },
@@ -1028,5 +1302,53 @@ describe("verifying Cloudflare Access JWTs", () => {
     });
 
     expect(response.status).toBe(401);
+  });
+});
+
+// The fake scheduler above can't catch a wrong delay, so the real nightly
+// schedule gets its own tests against fake timers.
+describe("scheduling the nightly reconcile", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("runs the task at 03:00 local time, then every night after", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 22, 21, 15));
+    const ranAt: Date[] = [];
+
+    scheduleNightly(async () => {
+      ranAt.push(new Date());
+    });
+    await vi.advanceTimersByTimeAsync(2 * 24 * 60 * 60 * 1000);
+
+    expect(ranAt).toEqual([new Date(2026, 9, 23, 3, 0), new Date(2026, 9, 24, 3, 0)]);
+  });
+
+  it("runs the same night when started before 03:00", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 22, 1, 30));
+    const ranAt: Date[] = [];
+
+    scheduleNightly(async () => {
+      ranAt.push(new Date());
+    });
+    await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000);
+
+    expect(ranAt).toEqual([new Date(2026, 9, 22, 3, 0)]);
+  });
+
+  it("keeps the schedule after a task fails", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 22, 21, 15));
+    let runs = 0;
+
+    scheduleNightly(async () => {
+      runs++;
+      throw new Error("Cloudflare API unreachable");
+    });
+    await vi.advanceTimersByTimeAsync(2 * 24 * 60 * 60 * 1000);
+
+    expect(runs).toBe(2);
   });
 });

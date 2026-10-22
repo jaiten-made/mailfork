@@ -8,7 +8,11 @@ import { readFileSync } from "node:fs";
 import { Hono, type Context } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import { ACCESS_JWT_HEADER, type AccessVerifier } from "./access.ts";
-import type { AddressListTarget, AddressStatus } from "./address-list.ts";
+import {
+  createAddressListPublisher,
+  type AddressListTarget,
+  type AddressStatus,
+} from "./address-list.ts";
 import type { ProfileRegistry } from "./profile-registry.ts";
 
 export interface AppDeps {
@@ -18,16 +22,22 @@ export interface AppDeps {
   accessVerifier: AccessVerifier;
   random: RandomSource;
   now: () => Date;
+  /** Registers a task to run every night. */
+  everyNight: (task: () => Promise<unknown>) => void;
 }
 
 const MAX_LABEL_LENGTH = 100;
 
+// Only application/json needs a CORS preflight, so requiring it refuses a
+// cross-site form post that rides on the Access cookie.
+function isJsonRequest(c: Context) {
+  const contentType = c.req.header("Content-Type") ?? "";
+  return contentType.split(";")[0]?.trim().toLowerCase() === "application/json";
+}
+
 /** The JSON object body, or null if there is none. */
 async function readJsonObject(c: Context): Promise<Record<string, unknown> | null> {
-  // Only application/json needs a CORS preflight, so this refuses a
-  // cross-site form post that rides on the Access cookie.
-  const contentType = c.req.header("Content-Type") ?? "";
-  if (contentType.split(";")[0]?.trim().toLowerCase() !== "application/json") return null;
+  if (!isJsonRequest(c)) return null;
   const body: unknown = await c.req.json().catch(() => null);
   if (typeof body !== "object" || body === null) return null;
   return body as Record<string, unknown>;
@@ -75,6 +85,10 @@ const NOT_FOUND = { error: "No such Profile." };
 
 const ALREADY_RETIRED = { error: "This Profile is already Retired." };
 
+const RECONCILE_FAILED = {
+  error: "Couldn't update Cloudflare's address list. Try again in a moment.",
+};
+
 const UNCONFIRMED_RETIRE = {
   error: "Type the full Profile Address to confirm the Retire.",
 };
@@ -83,16 +97,23 @@ export function createApp(deps: AppDeps) {
   const app = new Hono();
   const pageRoutes = loadPageRoutes();
 
-  // Called once the registry write has committed, so KV never holds an
-  // address or status the registry lacks. A failed push is fixed by the next
-  // reconcile.
-  async function publish(profileAddress: string, status: AddressStatus) {
-    try {
-      await deps.addressList.put(profileAddress, status);
-    } catch (error) {
-      console.error("Address list push failed:", error instanceof Error ? error.message : error);
+  // KV is a projection of the registry: every issued address with its status.
+  const publisher = createAddressListPublisher(deps.addressList, () => {
+    const issued = new Map<string, AddressStatus>();
+    for (const { profileAddress } of deps.registry.listLive()) issued.set(profileAddress, "live");
+    for (const { profileAddress } of deps.registry.listRetired()) {
+      issued.set(profileAddress, "retired");
     }
-  }
+    return issued;
+  });
+  void publisher.reconcile();
+  deps.everyNight(() => publisher.reconcile());
+
+  // Called once the registry write has committed, so KV never holds an
+  // address or status the registry lacks. A failed push shows on the page
+  // until a reconcile fixes it.
+  const publish = (profileAddress: string, status: AddressStatus) =>
+    publisher.push(profileAddress, status);
 
   app.use(
     secureHeaders({
@@ -119,6 +140,14 @@ export function createApp(deps: AppDeps) {
   for (const { path, contentType, body } of pageRoutes) {
     app.get(path, (c) => c.body(body, 200, { "Content-Type": contentType }));
   }
+
+  app.get("/api/address-list", (c) => c.json({ pushFailed: publisher.pushFailed }));
+
+  app.post("/api/address-list/reconcile", async (c) => {
+    if (!isJsonRequest(c)) return c.json({ error: "Send the reconcile as application/json." }, 400);
+    if (!(await publisher.reconcile())) return c.json(RECONCILE_FAILED, 502);
+    return c.json({ pushFailed: publisher.pushFailed });
+  });
 
   app.get("/api/profiles", (c) => c.json({ profiles: deps.registry.listLive() }));
 
