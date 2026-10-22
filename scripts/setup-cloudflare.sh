@@ -224,7 +224,8 @@ ask_until() {
 
 # check_mail "Send to" "Expected" asks whether a test mail behaved as expected.
 check_mail() {
-  step "Send a mail from the outside account to ${BOLD}$1${RESET}."
+  # No full stop after the address, so copying the line doesn't pick one up.
+  step "Send a mail from the outside account to: ${BOLD}$1${RESET}"
   note "Expected: $2"
   if ! confirm "Did that happen?"; then
     SKIPPED+=("Mail to $1 didn't behave as expected; check Email Routing > Activity log")
@@ -308,7 +309,8 @@ pause "Press Enter if PERSONAL_INBOX is listed above."
 stage "Route all mail to the Worker"
 open_url "https://developers.cloudflare.com/email-routing/email-workers/enable-email-workers/"
 step "In Email Routing > Routing rules, edit the Catch-all address."
-step "Set the action to Send to a Worker, pick private-profile-email, and enable it."
+step "Set the action to Send to a Worker, pick private-profile-email, and save."
+step "Then switch the catch-all's status toggle to Enabled. It's off by default."
 warn "Don't add per-address rules: the Worker and KV make every decision."
 pause "Press Enter once the catch-all is enabled."
 
@@ -341,25 +343,34 @@ warn "Don't paste it here. It goes on the Pi as /etc/private-profile/cloudflare-
 pause "Press Enter once it's in your password manager."
 
 stage "Create the tunnel"
-ask ADMIN_HOSTNAME "Admin hostname, on a domain you already have in this account:"
-while [[ "$ADMIN_HOSTNAME" == "$PROFILE_DOMAIN" || "$ADMIN_HOSTNAME" == *".$PROFILE_DOMAIN" ]]; do
-  warn "It must not be on the Profile Domain, so nothing there hints at an admin app."
+say "A subdomain of the Profile Domain works. Make it hard to guess: scanners try"
+say "admin, login, dash and the like first. A domain of your own also works."
+ask ADMIN_HOSTNAME "Admin hostname (such as stash.$PROFILE_DOMAIN):"
+while [[ "$ADMIN_HOSTNAME" == "$PROFILE_DOMAIN" || "$ADMIN_HOSTNAME" != *.* ]]; do
+  warn "Use a subdomain, not the Profile Domain itself, which only receives mail."
   ask ADMIN_HOSTNAME "Admin hostname:"
 done
 open_url "https://one.dash.cloudflare.com"
+note "If asked, activate the Zero Trust Free plan. Keep the team name bland:"
+note "it shows on the sign-in page."
 step "Go to Networks > Tunnels and create a cloudflared tunnel named private-profile."
-step "Copy the token from the install command into your password manager. Don't run the command."
-step "Add a public hostname: $ADMIN_HOSTNAME, service HTTP, URL admin:8080."
+step "For the environment, pick Docker and copy only the token after --token into"
+step "your password manager. Don't run the command."
+note "If Continue stays greyed out, go back to Tunnels: the tunnel already exists."
+step "Open the tunnel > Routes > add a Published application route:"
+step "$ADMIN_HOSTNAME, service URL http://admin:8080."
 warn "Don't paste the token here. It goes on the Pi as /etc/private-profile/tunnel-token."
 pause "Press Enter once the hostname is added."
 
 stage "Protect it with Access"
 step "In Zero Trust, go to Access > Applications and add a Self-hosted application for $ADMIN_HOSTNAME."
-step "Add one Allow policy whose only rule is Emails equal to your email."
+step "Add one Allow policy whose only Include rule is Emails equal to your email."
+note "The AUD tag is on the application's Additional settings tab, or its row in"
+note "the Applications list."
 ask_until ACCESS_AUD "The application's Application Audience (AUD) tag:" '^[0-9a-f]{32,128}$' \
   "An AUD tag is a long string of lowercase hex characters."
 write_env ACCESS_AUD "$ACCESS_AUD"
-step "Find your team domain in the Zero Trust settings."
+step "Find your team domain under Account details on the Zero Trust Overview."
 ask_until ACCESS_TEAM_DOMAIN "Team domain (such as owner.cloudflareaccess.com):" \
   '^[a-z0-9-]+\.cloudflareaccess\.com$' "Just <team>.cloudflareaccess.com, no https://."
 write_env ACCESS_TEAM_DOMAIN "$ACCESS_TEAM_DOMAIN"
