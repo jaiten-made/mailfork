@@ -29,7 +29,8 @@ Forwarded mail keeps its original `To`, so one filter labels all Profile mail:
 
 1. In Gmail's search box, enter `to:(@<profile domain>)` and open **Show search options**.
 2. Click **Create filter**, tick **Apply the label**, and choose a new label such as `Profile`.
-3. Also tick **Also apply filter to matching conversations** and create the filter.
+3. Tick **Never send it to Spam**. Forwarded mail from a new Profile Domain often lands in Spam at first.
+4. Also tick **Also apply filter to matching conversations** and create the filter.
 
 Mail where the Profile Address is only in `Bcc` may not match. The Worker also adds an `X-Profile-Address` header naming the Profile Address, which **Show original** shows, but Gmail can't filter on it.
 
