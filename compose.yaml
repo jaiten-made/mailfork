@@ -1,0 +1,46 @@
+# The admin app and cloudflared on the Raspberry Pi 4. See docs/pi-deployment.md.
+#
+# No ports are published: cloudflared dials out to Cloudflare, and the admin
+# app is reachable only from cloudflared on this Compose network. Settings
+# and secrets live outside git in PRIVATE_PROFILE_CONFIG (default
+# /etc/private-profile); deploy/ has examples.
+
+name: private-profile
+
+services:
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    image: private-profile-admin
+    restart: unless-stopped
+    env_file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/admin.env
+    environment:
+      PORT: "8080"
+      DATABASE_PATH: /data/profiles.db
+      CLOUDFLARE_API_TOKEN_FILE: /run/secrets/cloudflare-api-token
+    secrets:
+      - cloudflare-api-token
+    volumes:
+      - admin-data:/data
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    # The image already runs `cloudflared --no-autoupdate`.
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/tunnel-token
+    secrets:
+      - tunnel-token
+    depends_on:
+      - admin
+
+secrets:
+  cloudflare-api-token:
+    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/cloudflare-api-token
+  tunnel-token:
+    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/tunnel-token
+
+volumes:
+  admin-data:
