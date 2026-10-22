@@ -11,7 +11,7 @@
       // Value format: docs/kv-address-list.md
       "binding": "PROFILE_ADDRESSES",
       // From `pnpm exec wrangler kv namespace create PROFILE_ADDRESSES`.
-      // Not a secret, but deploy fails until it is filled in: docs/provisioning.md
+      // Not a secret. The admin app's KV_NAMESPACE_ID must match it.
       "id": "REPLACE_WITH_KV_NAMESPACE_ID"
     }
   ],
