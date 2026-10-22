@@ -19,6 +19,10 @@ const MAX_LABEL_LENGTH = 100;
 
 /** The trimmed Label from a `{ "label": string }` body, or null if it is unusable. */
 async function readLabel(c: Context): Promise<string | null> {
+  // Only application/json needs a CORS preflight, so this refuses a
+  // cross-site form post that rides on the Access cookie.
+  const contentType = c.req.header("Content-Type") ?? "";
+  if (contentType.split(";")[0]?.trim().toLowerCase() !== "application/json") return null;
   const body: unknown = await c.req.json().catch(() => null);
   if (typeof body !== "object" || body === null || !("label" in body)) return null;
   if (typeof body.label !== "string") return null;

@@ -74,7 +74,9 @@ function startAdmin({
     const { accessJwt = VALID_ACCESS_JWT, ...rest } = init;
     const headers = new Headers(rest.headers);
     if (accessJwt !== null) headers.set("Cf-Access-Jwt-Assertion", accessJwt);
-    if (rest.body !== undefined) headers.set("Content-Type", "application/json");
+    if (rest.body !== undefined && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
     return app.request(path, { ...rest, headers });
   }
 
@@ -168,6 +170,21 @@ describe("validating the Label", () => {
     });
 
     expect(response.status).toBe(400);
+  });
+
+  // A cross-site form can send text/plain without a CORS preflight, so a
+  // JSON body under any other Content-Type must not create a Profile.
+  it("refuses a JSON body that is not sent as application/json", async () => {
+    const admin = startAdmin();
+
+    const response = await admin.request("/api/profiles", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ label: "Shopping" }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await admin.list()).toEqual({ profiles: [] });
   });
 });
 
