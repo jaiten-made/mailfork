@@ -33,7 +33,13 @@ export function createAccessVerifier(options: {
  * Verifies against the Access team's published signing keys, such as
  * `owner.cloudflareaccess.com`, and the application's audience (AUD) tag.
  */
-export function cloudflareAccessVerifier(teamDomain: string, audience: string): AccessVerifier {
+export function cloudflareAccessVerifier({
+  teamDomain,
+  audience,
+}: {
+  teamDomain: string;
+  audience: string;
+}): AccessVerifier {
   const issuer = `https://${teamDomain}`;
   return createAccessVerifier({
     issuer,

@@ -8,8 +8,8 @@ import { openProfileRegistry } from "./profile-registry.ts";
 const VALID_ACCESS_JWT = "valid-access-jwt";
 const CREATED_AT = "2026-10-22T09:30:00.000Z";
 
-// Indexes into the bundled wordlists, so `pick(QUIET, OTTER, 42)` reads as
-// the Generated Address it scripts.
+// Indexes into the bundled wordlists, so `random: [QUIET, OTTER, 42]` reads
+// as the Generated Address it scripts.
 const QUIET = 47;
 const FADED = 17;
 const OTTER = 38;
@@ -168,6 +168,23 @@ describe("validating the Label", () => {
     });
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe("giving up on generation", () => {
+  it("fails without a Profile or a push when every Generated Address tried was issued before", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({
+      random: Array.from({ length: 11 }, () => [QUIET, OTTER, 42]).flat(),
+      addressList: kv.target,
+    });
+    await admin.create("Shopping");
+
+    const response = await admin.create("Travel");
+
+    expect(response.status).toBe(500);
+    expect(await admin.list()).toMatchObject({ profiles: [{ label: "Shopping" }] });
+    expect(kv.puts).toEqual([{ key: "quiet.otter.42@profile.example", value: "live" }]);
   });
 });
 

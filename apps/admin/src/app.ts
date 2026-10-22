@@ -15,10 +15,6 @@ export interface AppDeps {
   now: () => Date;
 }
 
-// With about 400,000 Generated Addresses, repeated collisions mean the
-// random source is broken, not that the addresses have run out.
-const MAX_GENERATION_ATTEMPTS = 10;
-
 const MAX_LABEL_LENGTH = 100;
 
 /** The trimmed Label from a `{ "label": string }` body, or null if it is unusable. */
@@ -42,7 +38,7 @@ const PAGE_FILES = {
   "/app.js": ["app.js", "text/javascript; charset=utf-8"],
 } as const;
 
-function readPage() {
+function loadPageRoutes() {
   return Object.entries(PAGE_FILES).map(([path, [file, contentType]]) => ({
     path,
     contentType,
@@ -54,7 +50,7 @@ const NOT_FOUND = { error: "No such Profile." };
 
 export function createApp(deps: AppDeps) {
   const app = new Hono();
-  const page = readPage();
+  const pageRoutes = loadPageRoutes();
 
   app.use(
     secureHeaders({
@@ -78,7 +74,7 @@ export function createApp(deps: AppDeps) {
     await next();
   });
 
-  for (const { path, contentType, body } of page) {
+  for (const { path, contentType, body } of pageRoutes) {
     app.get(path, (c) => c.body(body, 200, { "Content-Type": contentType }));
   }
 
@@ -88,22 +84,20 @@ export function createApp(deps: AppDeps) {
     const label = await readLabel(c);
     if (label === null) return c.json(INVALID_LABEL, 400);
 
-    const createdAt = deps.now();
-    for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
-      const profileAddress = `${generateLocalPart(deps.random)}@${deps.profileDomain}`;
-      const profile = deps.registry.create(label, profileAddress, createdAt);
-      if (!profile) continue;
+    const profile = deps.registry.createWithGeneratedAddress(
+      label,
+      () => `${generateLocalPart(deps.random)}@${deps.profileDomain}`,
+      deps.now(),
+    );
 
-      // The registry write has committed, so KV never holds an address the
-      // registry lacks. A failed push is fixed by the next reconcile.
-      try {
-        await deps.addressList.put(profile.profileAddress, "live");
-      } catch (error) {
-        console.error("Address list push failed:", error);
-      }
-      return c.json(profile, 201);
+    // The registry write has committed, so KV never holds an address the
+    // registry lacks. A failed push is fixed by the next reconcile.
+    try {
+      await deps.addressList.put(profile.profileAddress, "live");
+    } catch (error) {
+      console.error("Address list push failed:", error instanceof Error ? error.message : error);
     }
-    throw new Error("Every Generated Address tried was issued before");
+    return c.json(profile, 201);
   });
 
   app.patch("/api/profiles/:id", async (c) => {

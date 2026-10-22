@@ -11,12 +11,8 @@ const config = readConfig(process.env);
 const app = createApp({
   registry: openProfileRegistry(config.databasePath),
   profileDomain: config.profileDomain,
-  addressList: cloudflareKvTarget({
-    accountId: config.cloudflareAccountId,
-    namespaceId: config.kvNamespaceId,
-    apiToken: config.cloudflareApiToken,
-  }),
-  accessVerifier: cloudflareAccessVerifier(config.accessTeamDomain, config.accessAudience),
+  addressList: cloudflareKvTarget(config.kv),
+  accessVerifier: cloudflareAccessVerifier(config.access),
   // Generated Addresses must not be guessable, so use the CSPRNG.
   random: (maxExclusive) => randomInt(maxExclusive),
   now: () => new Date(),

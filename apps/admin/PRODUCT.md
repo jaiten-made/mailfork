@@ -14,11 +14,11 @@ One Owner _(inferred)_: the only person who signs in. They usually reach the adm
 
 ## Product Purpose
 
-Private Profile lets the Owner hold separate identities (Profiles), each with its own Profile Address on a dedicated Profile Domain, so services can't link those identities to each other or to the Owner. Mail to a live Profile Address is forwarded to the Personal Inbox. The admin app is where Profiles are created, listed, renamed and (later) Retired. Success: a new, working address is copied into a signup form in under ten seconds.
+Private Profile lets the Owner hold separate Profiles, each with its own Profile Address on a dedicated Profile Domain, so services can't link those Profiles to each other or to the Owner. Mail to a live Profile Address is forwarded to the Personal Inbox. The admin app is where Profiles are created, listed, renamed and (later) Retired. Success: a new, working address is copied into a signup form in under ten seconds.
 
 ## Positioning
 
-Unlike hosted alias services, the Profiles live only on the Owner's own Raspberry Pi; Cloudflare only learns which addresses exist and whether they are live (ADR 0002, docs/kv-address-list.md).
+Unlike hosted forwarding services, the Profiles live only on the Owner's own Raspberry Pi; Cloudflare only learns which addresses exist and whether they are live (ADR 0002, docs/kv-address-list.md).
 
 ## Operating Context
 

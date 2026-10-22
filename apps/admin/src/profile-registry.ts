@@ -7,29 +7,46 @@ export interface Profile {
   createdAt: string;
 }
 
-interface ProfileRow {
-  id: number;
-  label: string;
-  profile_address: string;
-  created_at: string;
-}
+const PROFILE_COLUMNS = "id, label, profile_address, created_at";
 
-function toProfile(row: ProfileRow): Profile {
+/** Maps a row selected with PROFILE_COLUMNS, or passes on a missing one. */
+function toProfile(row: Record<string, unknown> | undefined): Profile | null {
+  if (!row) return null;
+  const { id, label, profile_address, created_at } = row;
   return {
-    id: row.id,
-    label: row.label,
-    profileAddress: row.profile_address,
-    createdAt: row.created_at,
+    id: id as number,
+    label: label as string,
+    profileAddress: profile_address as string,
+    createdAt: created_at as string,
   };
 }
 
-export type ProfileRegistry = ReturnType<typeof openProfileRegistry>;
+// With about 400,000 Generated Addresses, repeated collisions mean the
+// random source is broken, not that the addresses have run out.
+const MAX_GENERATION_ATTEMPTS = 10;
+
+export interface ProfileRegistry {
+  /**
+   * Creates a live Profile with a Generated Address, generating again while
+   * the address was ever issued before. The write has committed when this
+   * returns.
+   */
+  createWithGeneratedAddress(
+    label: string,
+    generateAddress: () => string,
+    createdAt: Date,
+  ): Profile;
+  /** Changes only the Label. Returns null if there is no such Profile. */
+  rename(id: number, label: string): Profile | null;
+  /** Live Profiles, newest first. */
+  listLive(): Profile[];
+}
 
 /**
  * The SQLite Profile registry. Rows are never deleted, so the unique
  * `profile_address` column holds every Profile Address ever issued.
  */
-export function openProfileRegistry(path: string) {
+export function openProfileRegistry(path: string): ProfileRegistry {
   const db = new DatabaseSync(path);
   db.exec(`
     CREATE TABLE IF NOT EXISTS profiles (
@@ -45,40 +62,36 @@ export function openProfileRegistry(path: string) {
     INSERT INTO profiles (label, profile_address, created_at)
     VALUES (?, ?, ?)
     ON CONFLICT (profile_address) DO NOTHING
-    RETURNING id, label, profile_address, created_at
+    RETURNING ${PROFILE_COLUMNS}
+  `);
+
+  const updateLabel = db.prepare(`
+    UPDATE profiles SET label = ? WHERE id = ?
+    RETURNING ${PROFILE_COLUMNS}
   `);
 
   const selectLive = db.prepare(`
-    SELECT id, label, profile_address, created_at
+    SELECT ${PROFILE_COLUMNS}
     FROM profiles
     WHERE retired_at IS NULL
     ORDER BY created_at DESC, id DESC
   `);
 
-  const updateLabel = db.prepare(`
-    UPDATE profiles SET label = ? WHERE id = ?
-    RETURNING id, label, profile_address, created_at
-  `);
-
   return {
-    /**
-     * Creates a live Profile, or returns null if the Profile Address was
-     * ever issued before. The write has committed when this returns.
-     */
-    create(label: string, profileAddress: string, createdAt: Date): Profile | null {
-      const row = insert.get(label, profileAddress, createdAt.toISOString());
-      return row ? toProfile(row as unknown as ProfileRow) : null;
+    createWithGeneratedAddress(label, generateAddress, createdAt) {
+      for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
+        const profile = toProfile(insert.get(label, generateAddress(), createdAt.toISOString()));
+        if (profile) return profile;
+      }
+      throw new Error("Every Generated Address tried was issued before");
     },
 
-    /** Changes only the Label. Returns null if there is no such Profile. */
-    rename(id: number, label: string): Profile | null {
-      const row = updateLabel.get(label, id);
-      return row ? toProfile(row as unknown as ProfileRow) : null;
+    rename(id, label) {
+      return toProfile(updateLabel.get(label, id));
     },
 
-    /** Live Profiles, newest first. */
-    listLive(): Profile[] {
-      return (selectLive.all() as unknown as ProfileRow[]).map(toProfile);
+    listLive() {
+      return selectLive.all().flatMap((row) => toProfile(row) ?? []);
     },
   };
 }
