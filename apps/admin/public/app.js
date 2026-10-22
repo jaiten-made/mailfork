@@ -1,5 +1,6 @@
-// The admin page: create a Profile from a Label, list live Profiles, copy a
-// Profile Address and rename a Label, all through the JSON API.
+// The admin page: create a Profile from a Label, list live and Retired
+// Profiles, copy a Profile Address, rename a Label and Retire a Profile, all
+// through the JSON API.
 
 const SIGNED_OUT = "Your Cloudflare Access sign-in has expired. Reload the page to sign in again.";
 const UNREACHABLE = "Couldn't reach the admin app. Check your connection and try again.";
@@ -69,30 +70,43 @@ function wireCopy(button, address) {
   button.onclick = () => copyAddress(button, address);
 }
 
+function setTime(element, prefix, iso) {
+  element.dateTime = iso;
+  element.textContent = `${prefix} ${dateFormat.format(new Date(iso))}`;
+}
+
 function renderTicket(profile) {
   const ticket = $("ticket-template").content.firstElementChild.cloneNode(true);
   const label = ticket.querySelector(".ticket-label");
-  const created = ticket.querySelector(".created");
+  const actions = ticket.querySelector(".ticket-actions");
   const renameButton = ticket.querySelector(".rename");
   const form = ticket.querySelector(".rename-form");
   const input = form.querySelector("input");
   const error = form.querySelector(".error");
   const inputId = `rename-${profile.id}`;
+  const retireButton = ticket.querySelector(".retire");
+  const retireForm = ticket.querySelector(".retire-form");
+  const retireInput = retireForm.querySelector("input");
+  const retireError = retireForm.querySelector(".error");
+  const retireInputId = `retire-${profile.id}`;
 
   label.textContent = profile.label;
-  created.dateTime = profile.createdAt;
-  created.textContent = `Created ${dateFormat.format(new Date(profile.createdAt))}`;
+  setTime(ticket.querySelector(".created"), "Created", profile.createdAt);
   setAddress(ticket.querySelector(".address"), profile.profileAddress);
   wireCopy(ticket.querySelector(".copy"), profile.profileAddress);
 
   input.id = inputId;
   form.querySelector("label").htmlFor = inputId;
-  renameButton.setAttribute("aria-label", `Rename ${profile.label}`);
+  const labelActions = (text) => {
+    renameButton.setAttribute("aria-label", `Rename ${text}`);
+    retireButton.setAttribute("aria-label", `Retire ${text}`);
+  };
+  labelActions(profile.label);
 
   const closeRename = () => {
     form.hidden = true;
     label.hidden = false;
-    renameButton.hidden = false;
+    actions.hidden = false;
     showError(error, "");
     renameButton.focus();
   };
@@ -101,7 +115,7 @@ function renderTicket(profile) {
     input.value = label.textContent;
     form.hidden = false;
     label.hidden = true;
-    renameButton.hidden = true;
+    actions.hidden = true;
     input.focus();
     input.select();
   };
@@ -119,7 +133,7 @@ function renderTicket(profile) {
         body: JSON.stringify({ label: input.value }),
       });
       label.textContent = renamed.label;
-      renameButton.setAttribute("aria-label", `Rename ${renamed.label}`);
+      labelActions(renamed.label);
       closeRename();
     } catch (failure) {
       showError(error, failure.message);
@@ -128,10 +142,65 @@ function renderTicket(profile) {
     }
   };
 
+  // Retire is final, so the Owner types the whole Profile Address to confirm.
+  retireInput.id = retireInputId;
+  retireForm.querySelector("label").htmlFor = retireInputId;
+  retireForm.querySelector(".retire-warning").id = `${retireInputId}-warning`;
+  retireInput.setAttribute("aria-describedby", `${retireInputId}-warning`);
+  retireInput.setAttribute("aria-label", `Type ${profile.profileAddress} to confirm`);
+  setAddress(retireForm.querySelector(".address"), profile.profileAddress);
+
+  const closeRetire = () => {
+    retireForm.hidden = true;
+    actions.hidden = false;
+    retireInput.value = "";
+    retireInput.removeAttribute("aria-invalid");
+    showError(retireError, "");
+    retireButton.focus();
+  };
+
+  retireButton.onclick = () => {
+    retireForm.hidden = false;
+    actions.hidden = true;
+    retireInput.focus();
+  };
+  retireForm.querySelector(".cancel").onclick = closeRetire;
+  retireForm.onkeydown = (event) => {
+    if (event.key === "Escape") closeRetire();
+  };
+  retireForm.onsubmit = async (event) => {
+    event.preventDefault();
+    const confirm = retireForm.querySelector('button[type="submit"]');
+    confirm.disabled = true;
+    try {
+      const retired = await api(`/api/profiles/${profile.id}/retire`, {
+        method: "POST",
+        body: JSON.stringify({ confirmation: retireInput.value }),
+      });
+      showRetired(retired);
+      await loadProfiles();
+    } catch (failure) {
+      retireInput.setAttribute("aria-invalid", "true");
+      showError(retireError, failure.message);
+      retireInput.focus();
+    } finally {
+      confirm.disabled = false;
+    }
+  };
+
   return ticket;
 }
 
-async function loadProfiles() {
+function renderRetiredTicket(profile) {
+  const ticket = $("retired-template").content.firstElementChild.cloneNode(true);
+  ticket.querySelector(".ticket-label").textContent = profile.label;
+  setTime(ticket.querySelector(".created"), "Created", profile.createdAt);
+  setTime(ticket.querySelector(".retired-at"), "Retired", profile.retiredAt);
+  setAddress(ticket.querySelector(".address"), profile.profileAddress);
+  return ticket;
+}
+
+async function loadLive() {
   const list = $("profiles");
   list.setAttribute("aria-busy", "true");
   try {
@@ -147,6 +216,25 @@ async function loadProfiles() {
   }
 }
 
+// Shown only once something is Retired, so it never crowds the create path.
+async function loadRetired() {
+  const section = $("retired-section");
+  try {
+    const { profiles } = await api("/api/profiles/retired");
+    $("retired").replaceChildren(...profiles.map(renderRetiredTicket));
+    $("retired-count").textContent = `(${profiles.length})`;
+    section.hidden = profiles.length === 0;
+    showError($("retired-error"), "");
+  } catch (failure) {
+    section.hidden = false;
+    showError($("retired-error"), failure.message);
+  }
+}
+
+function loadProfiles() {
+  return Promise.all([loadLive(), loadRetired()]);
+}
+
 function showIssued(profile) {
   const issued = $("issued");
   $("issued-label").textContent = profile.label;
@@ -156,6 +244,16 @@ function showIssued(profile) {
   issued.hidden = true;
   void issued.offsetWidth;
   issued.hidden = false;
+}
+
+function showRetired(profile) {
+  const notice = $("retired-notice");
+  setAddress($("retired-notice-address"), profile.profileAddress);
+  // The just-issued ticket must not keep offering a Retired Address to copy.
+  if ($("issued-address").textContent === profile.profileAddress) $("issued").hidden = true;
+  notice.hidden = false;
+  // Its ticket is about to go, so focus moves to the notice.
+  notice.focus();
 }
 
 $("create-form").onsubmit = async (event) => {
@@ -181,6 +279,7 @@ $("create-form").onsubmit = async (event) => {
     input.value = "";
     input.removeAttribute("aria-invalid");
     showError(error, "");
+    $("retired-notice").hidden = true;
     showIssued(profile);
     $("issued-copy").focus();
     await loadProfiles();

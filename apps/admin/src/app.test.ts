@@ -7,6 +7,7 @@ import { openProfileRegistry } from "./profile-registry.ts";
 
 const VALID_ACCESS_JWT = "valid-access-jwt";
 const CREATED_AT = "2026-10-22T09:30:00.000Z";
+const RETIRED_AT = "2026-10-23T14:05:00.000Z";
 
 // Indexes into the bundled wordlists, so `random: [QUIET, OTTER, 42]` reads
 // as the Generated Address it scripts.
@@ -101,6 +102,12 @@ function startAdmin({
         method: "PATCH",
         body: JSON.stringify({ label }),
       }),
+    retire: (id: unknown, confirmation: unknown) =>
+      request(`/api/profiles/${id}/retire`, {
+        method: "POST",
+        body: JSON.stringify({ confirmation }),
+      }),
+    listRetired: async () => (await request("/api/profiles/retired")).json(),
   };
 }
 
@@ -231,6 +238,46 @@ describe("listing Profiles", () => {
     });
   });
 
+  it("lists Retired Profiles separately, most recently Retired first, with created-at and retired-at", async () => {
+    const admin = startAdmin({ random: [QUIET, OTTER, 42, FADED, FOX, 7, QUIET, FOX, 1] });
+    admin.setTime("2026-10-20T08:00:00.000Z");
+    const shopping = await admin.createProfile("Shopping");
+    admin.setTime("2026-10-21T19:45:00.000Z");
+    const dating = await admin.createProfile("Dating");
+    await admin.createProfile("Travel");
+    admin.setTime("2026-10-22T07:10:00.000Z");
+    await admin.retire(dating.id, "faded.fox.07@profile.example");
+    admin.setTime("2026-10-23T14:05:00.000Z");
+    await admin.retire(shopping.id, "quiet.otter.42@profile.example");
+
+    expect(await admin.listRetired()).toEqual({
+      profiles: [
+        {
+          id: shopping.id,
+          label: "Shopping",
+          profileAddress: "quiet.otter.42@profile.example",
+          createdAt: "2026-10-20T08:00:00.000Z",
+          retiredAt: "2026-10-23T14:05:00.000Z",
+        },
+        {
+          id: dating.id,
+          label: "Dating",
+          profileAddress: "faded.fox.07@profile.example",
+          createdAt: "2026-10-21T19:45:00.000Z",
+          retiredAt: "2026-10-22T07:10:00.000Z",
+        },
+      ],
+    });
+    expect(await admin.list()).toMatchObject({ profiles: [{ label: "Travel" }] });
+  });
+
+  it("lists no Retired Profiles before the first Retire", async () => {
+    const admin = startAdmin();
+    await admin.createProfile("Shopping");
+
+    expect(await admin.listRetired()).toEqual({ profiles: [] });
+  });
+
   it("lists nothing before the first Profile is created", async () => {
     const admin = startAdmin();
 
@@ -286,6 +333,51 @@ describe("publishing the address list", () => {
     await admin.create("   ");
 
     expect(kv.puts).toEqual([]);
+  });
+
+  it("pushes a Retired Address to KV as retired", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    const created = await admin.createProfile("Shopping");
+
+    await admin.retire(created.id, "quiet.otter.42@profile.example");
+
+    expect(kv.puts).toEqual([
+      { key: "quiet.otter.42@profile.example", value: "live" },
+      { key: "quiet.otter.42@profile.example", value: "retired" },
+    ]);
+  });
+
+  it("pushes a Retired Address only after the Retire has committed", async () => {
+    const liveAtPush: unknown[] = [];
+    const kv = recordingKv(async ({ value }) => {
+      if (value === "retired") liveAtPush.push(await admin.list());
+    });
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    const created = await admin.createProfile("Shopping");
+
+    await admin.retire(created.id, "quiet.otter.42@profile.example");
+
+    expect(liveAtPush).toEqual([{ profiles: [] }]);
+  });
+
+  it("keeps the Retire when the push fails", async () => {
+    let failPuts = false;
+    const admin = startAdmin({
+      random: [QUIET, OTTER, 42],
+      addressList: {
+        async put() {
+          if (failPuts) throw new Error("Cloudflare API unreachable");
+        },
+      },
+    });
+    const created = await admin.createProfile("Shopping");
+    failPuts = true;
+
+    const response = await admin.retire(created.id, "quiet.otter.42@profile.example");
+
+    expect(response.status).toBe(200);
+    expect(await admin.list()).toEqual({ profiles: [] });
   });
 
   it("keeps the new Profile when the push fails", async () => {
@@ -361,6 +453,162 @@ describe("renaming a Profile", () => {
   });
 });
 
+describe("retiring a Profile", () => {
+  it("Retires a Profile when the confirmation is its full Profile Address", async () => {
+    const admin = startAdmin({ random: [QUIET, OTTER, 42] });
+    const created = await admin.createProfile("Shopping");
+    admin.setTime(RETIRED_AT);
+
+    const response = await admin.retire(created.id, "quiet.otter.42@profile.example");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      id: created.id,
+      label: "Shopping",
+      profileAddress: "quiet.otter.42@profile.example",
+      createdAt: CREATED_AT,
+      retiredAt: RETIRED_AT,
+    });
+    expect(await admin.list()).toEqual({ profiles: [] });
+  });
+
+  it.each([
+    ["only the local part", "quiet.otter.42"],
+    ["another Profile Address", "faded.fox.07@profile.example"],
+    ["the address on another domain", "quiet.otter.42@other.example"],
+    ["nothing", ""],
+    ["a non-string", 42],
+    ["no confirmation", undefined],
+  ])("refuses to Retire when the confirmation is %s", async (_, confirmation) => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    const created = await admin.createProfile("Shopping");
+
+    const response = await admin.retire(created.id, confirmation);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Type the full Profile Address to confirm the Retire.",
+    });
+    expect(await admin.list()).toMatchObject({ profiles: [{ label: "Shopping" }] });
+    expect(kv.puts).toEqual([{ key: "quiet.otter.42@profile.example", value: "live" }]);
+  });
+
+  it("accepts a confirmation that differs only in case and surrounding spaces", async () => {
+    const admin = startAdmin({ random: [QUIET, OTTER, 42] });
+    const created = await admin.createProfile("Shopping");
+
+    const response = await admin.retire(created.id, "  Quiet.Otter.42@Profile.Example ");
+
+    expect(response.status).toBe(200);
+    expect(await admin.list()).toEqual({ profiles: [] });
+  });
+
+  it.each([999, "not-a-number"])("answers 404 for the unknown Profile id %j", async (id) => {
+    const admin = startAdmin();
+
+    const response = await admin.retire(id, "quiet.otter.42@profile.example");
+
+    expect(response.status).toBe(404);
+  });
+
+  it("refuses to Retire a Profile that is already Retired, keeping its retired-at", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    const created = await admin.createProfile("Shopping");
+    admin.setTime(RETIRED_AT);
+    await admin.retire(created.id, "quiet.otter.42@profile.example");
+    admin.setTime("2026-10-24T10:00:00.000Z");
+
+    const response = await admin.retire(created.id, "quiet.otter.42@profile.example");
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "This Profile is already Retired." });
+    expect(await admin.listRetired()).toMatchObject({ profiles: [{ retiredAt: RETIRED_AT }] });
+    expect(kv.puts).toHaveLength(2);
+  });
+
+  it("refuses a confirmation that is not sent as application/json", async () => {
+    const admin = startAdmin({ random: [QUIET, OTTER, 42] });
+    const created = await admin.createProfile("Shopping");
+
+    const response = await admin.request(`/api/profiles/${created.id}/retire`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ confirmation: "quiet.otter.42@profile.example" }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await admin.list()).toMatchObject({ profiles: [{ label: "Shopping" }] });
+  });
+});
+
+describe("Retire is final", () => {
+  async function retiredShopping() {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    const created = await admin.createProfile("Shopping");
+    admin.setTime(RETIRED_AT);
+    await admin.retire(created.id, "quiet.otter.42@profile.example");
+    return { admin, kv, id: created.id };
+  }
+
+  it.each([
+    ["POST", "reinstate", undefined],
+    ["POST", "unretire", undefined],
+    ["DELETE", "retire", undefined],
+    ["PATCH", "", JSON.stringify({ retiredAt: null })],
+    ["PUT", "", JSON.stringify({ retiredAt: null })],
+  ])("offers no way to reinstate a Retired Profile: %s /api/profiles/:id/%s", async (method, action, body) => {
+    const { admin, kv, id } = await retiredShopping();
+
+    const response = await admin.request(`/api/profiles/${id}${action ? `/${action}` : ""}`, {
+      method,
+      body,
+    });
+
+    expect(response.ok).toBe(false);
+    expect(await admin.list()).toEqual({ profiles: [] });
+    expect(await admin.listRetired()).toMatchObject({
+      profiles: [{ profileAddress: "quiet.otter.42@profile.example", retiredAt: RETIRED_AT }],
+    });
+    expect(kv.puts.at(-1)).toEqual({ key: "quiet.otter.42@profile.example", value: "retired" });
+  });
+
+  it("refuses to rename a Retired Profile", async () => {
+    const { admin, id } = await retiredShopping();
+
+    const response = await admin.rename(id, "Old shopping");
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "A Retired Profile can't be renamed." });
+    expect(await admin.listRetired()).toMatchObject({ profiles: [{ label: "Shopping" }] });
+  });
+
+  it("never issues a Retired Address again: a seeded source that regenerates it causes a retry", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({
+      random: [QUIET, OTTER, 42, QUIET, OTTER, 42, FADED, FOX, 7],
+      addressList: kv.target,
+    });
+    const shopping = await admin.createProfile("Shopping");
+    await admin.retire(shopping.id, "quiet.otter.42@profile.example");
+
+    const response = await admin.create("Travel");
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({
+      label: "Travel",
+      profileAddress: "faded.fox.07@profile.example",
+    });
+    expect(kv.puts).toEqual([
+      { key: "quiet.otter.42@profile.example", value: "live" },
+      { key: "quiet.otter.42@profile.example", value: "retired" },
+      { key: "faded.fox.07@profile.example", value: "live" },
+    ]);
+  });
+});
+
 describe("the page", () => {
   it("serves a phone-sized page that warns a new address can take up to a minute", async () => {
     const admin = startAdmin();
@@ -372,6 +620,14 @@ describe("the page", () => {
     expect(response.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
     expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1" />');
     expect(html).toContain("A new address can take up to a minute to start working.");
+  });
+
+  it("warns after a Retire that a Retired Address can take up to a minute to stop working", async () => {
+    const admin = startAdmin();
+
+    const html = await (await admin.request("/")).text();
+
+    expect(html).toContain("A Retired Address can take up to a minute to stop working.");
   });
 
   it.each([
@@ -392,6 +648,11 @@ describe("requiring a Cloudflare Access JWT", () => {
     ["/api/profiles", { method: "GET" }],
     ["/api/profiles", { method: "POST", body: JSON.stringify({ label: "Shopping" }) }],
     ["/api/profiles/1", { method: "PATCH", body: JSON.stringify({ label: "Shopping" }) }],
+    ["/api/profiles/retired", { method: "GET" }],
+    [
+      "/api/profiles/1/retire",
+      { method: "POST", body: JSON.stringify({ confirmation: "quiet.otter.42@profile.example" }) },
+    ],
     ["/", { method: "GET" }],
     ["/no-such-page", { method: "GET" }],
   ];
@@ -439,6 +700,21 @@ describe("requiring a Cloudflare Access JWT", () => {
     expect(await admin.list()).toMatchObject({
       profiles: [{ label: "Shopping" }],
     });
+  });
+
+  it("does not Retire a Profile for a rejected request", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], addressList: kv.target });
+    const created = await admin.createProfile("Shopping");
+
+    await admin.request(`/api/profiles/${created.id}/retire`, {
+      method: "POST",
+      body: JSON.stringify({ confirmation: "quiet.otter.42@profile.example" }),
+      accessJwt: "forged-access-jwt",
+    });
+
+    expect(await admin.list()).toMatchObject({ profiles: [{ label: "Shopping" }] });
+    expect(kv.puts).toEqual([{ key: "quiet.otter.42@profile.example", value: "live" }]);
   });
 });
 

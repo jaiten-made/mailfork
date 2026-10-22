@@ -7,7 +7,12 @@ export interface Profile {
   createdAt: string;
 }
 
+export interface RetiredProfile extends Profile {
+  retiredAt: string;
+}
+
 const PROFILE_COLUMNS = "id, label, profile_address, created_at";
+const RETIRED_PROFILE_COLUMNS = `${PROFILE_COLUMNS}, retired_at`;
 
 /** Maps a row selected with PROFILE_COLUMNS, or passes on a missing one. */
 function toProfile(row: Record<string, unknown> | undefined): Profile | null {
@@ -19,6 +24,13 @@ function toProfile(row: Record<string, unknown> | undefined): Profile | null {
     profileAddress: profile_address as string,
     createdAt: created_at as string,
   };
+}
+
+/** Maps a row selected with RETIRED_PROFILE_COLUMNS, or passes on a missing one. */
+function toRetiredProfile(row: Record<string, unknown> | undefined): RetiredProfile | null {
+  const profile = toProfile(row);
+  if (!profile) return null;
+  return { ...profile, retiredAt: row?.retired_at as string };
 }
 
 // With about 400,000 Generated Addresses, repeated collisions mean the
@@ -36,10 +48,19 @@ export interface ProfileRegistry {
     generateAddress: () => string,
     createdAt: Date,
   ): Profile;
-  /** Changes only the Label. Returns null if there is no such Profile. */
+  /** A live or Retired Profile, with retiredAt null while live. Null if there is no such Profile. */
+  find(id: number): (Profile & { retiredAt: string | null }) | null;
+  /** Changes only the Label of a live Profile. Returns null if there is no such live Profile. */
   rename(id: number, label: string): Profile | null;
+  /**
+   * Sets the retired-at time of a live Profile. Returns null if there is no
+   * such live Profile. Nothing ever clears it again.
+   */
+  retire(id: number, retiredAt: Date): RetiredProfile | null;
   /** Live Profiles, newest first. */
   listLive(): Profile[];
+  /** Retired Profiles, most recently Retired first. */
+  listRetired(): RetiredProfile[];
 }
 
 /**
@@ -65,9 +86,18 @@ export function openProfileRegistry(path: string): ProfileRegistry {
     RETURNING ${PROFILE_COLUMNS}
   `);
 
+  const selectById = db.prepare(`
+    SELECT ${RETIRED_PROFILE_COLUMNS} FROM profiles WHERE id = ?
+  `);
+
   const updateLabel = db.prepare(`
-    UPDATE profiles SET label = ? WHERE id = ?
+    UPDATE profiles SET label = ? WHERE id = ? AND retired_at IS NULL
     RETURNING ${PROFILE_COLUMNS}
+  `);
+
+  const setRetiredAt = db.prepare(`
+    UPDATE profiles SET retired_at = ? WHERE id = ? AND retired_at IS NULL
+    RETURNING ${RETIRED_PROFILE_COLUMNS}
   `);
 
   const selectLive = db.prepare(`
@@ -75,6 +105,13 @@ export function openProfileRegistry(path: string): ProfileRegistry {
     FROM profiles
     WHERE retired_at IS NULL
     ORDER BY created_at DESC, id DESC
+  `);
+
+  const selectRetired = db.prepare(`
+    SELECT ${RETIRED_PROFILE_COLUMNS}
+    FROM profiles
+    WHERE retired_at IS NOT NULL
+    ORDER BY retired_at DESC, id DESC
   `);
 
   return {
@@ -86,12 +123,26 @@ export function openProfileRegistry(path: string): ProfileRegistry {
       throw new Error("Every Generated Address tried was issued before");
     },
 
+    find(id) {
+      const row = selectById.get(id);
+      const profile = toProfile(row);
+      return profile && { ...profile, retiredAt: (row?.retired_at as string | null) ?? null };
+    },
+
     rename(id, label) {
       return toProfile(updateLabel.get(label, id));
     },
 
+    retire(id, retiredAt) {
+      return toRetiredProfile(setRetiredAt.get(retiredAt.toISOString(), id));
+    },
+
     listLive() {
       return selectLive.all().flatMap((row) => toProfile(row) ?? []);
+    },
+
+    listRetired() {
+      return selectRetired.all().flatMap((row) => toRetiredProfile(row) ?? []);
     },
   };
 }
