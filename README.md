@@ -21,6 +21,8 @@ pnpm check
 
 Follow `docs/provisioning.md` to register the Profile Domain, turn on Email Routing, deploy the Worker and send the first real mail.
 
+`scripts/setup-cloudflare.sh` walks through the same steps, plus the API token, tunnel and Access application from `docs/pi-deployment.md`. It opens each page, runs the `wrangler` commands and saves the non-secret settings to `deploy/admin.env`. Tokens never pass through it.
+
 ## Labelling Profile mail in Gmail
 
 Forwarded mail keeps its original `To`, so one filter labels all Profile mail:
