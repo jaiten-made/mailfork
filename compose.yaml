@@ -14,10 +14,14 @@ services:
       dockerfile: apps/admin/Dockerfile
     image: private-profile-admin
     restart: unless-stopped
+    # About 65 MiB in use on the Pi. The heap cap makes Node collect garbage
+    # before the container limit kills it.
+    mem_limit: 256m
     env_file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/admin.env
     environment:
       PORT: "8080"
       DATABASE_PATH: /data/profiles.db
+      NODE_OPTIONS: --max-old-space-size=128
       CLOUDFLARE_API_TOKEN_FILE: /run/secrets/cloudflare-api-token
     secrets:
       - cloudflare-api-token
@@ -27,6 +31,8 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:2026.9.3
     restart: unless-stopped
+    # About 18 MiB in use on the Pi.
+    mem_limit: 128m
     # The image already runs `cloudflared --no-autoupdate`.
     command: tunnel run
     environment:
