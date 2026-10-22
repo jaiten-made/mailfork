@@ -513,6 +513,71 @@ main h2 {
   overflow-wrap: anywhere;
 }
 
+/* After a failed push: KV may not match the registry until a reconcile. */
+.push-failed {
+  margin-bottom: 28px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--error);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.push-failed h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--error);
+}
+
+.push-failed p {
+  margin: 0 0 12px;
+  max-width: 60ch;
+}
+
+.push-failed button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--ticket-red);
+  color: var(--on-red);
+  font-weight: 600;
+}
+
+.push-failed button:hover:not(:disabled) {
+  background: var(--ticket-red-deep);
+}
+
+.push-failed .error {
+  margin: 12px 0 0;
+}
+
+/* On-demand reconcile: rarely needed, so kept quiet below the lists. */
+.address-list {
+  margin-top: 36px;
+}
+
+.address-list button {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.address-list button:hover {
+  color: var(--ink);
+}
+
+.address-list p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
 /* Retired tickets: handed back, so muted and with nothing left to copy. */
 .retired-section {
   margin-top: 36px;

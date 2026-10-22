@@ -58,6 +58,16 @@
     </header>
 
     <main class="wrap">
+      <section id="push-failed" class="push-failed" hidden aria-labelledby="push-failed-heading">
+        <h2 id="push-failed-heading">The latest change didn't reach Cloudflare.</h2>
+        <p>
+          A new address may not accept mail yet, and a Retired Address may still
+          forward it. Don't hand out a new address until this is fixed.
+        </p>
+        <button type="button" id="push-failed-retry">Push the address list again</button>
+        <p id="push-failed-error" class="error" role="alert" hidden></p>
+      </section>
+
       <section id="issued" class="issued" hidden aria-labelledby="issued-heading">
         <h2 id="issued-heading" class="visually-hidden">New Profile Address</h2>
         <div class="ticket ticket-new">
@@ -102,6 +112,11 @@
         <p id="retired-error" class="error" role="alert" hidden></p>
         <ul id="retired" class="tickets"></ul>
       </section>
+
+      <footer class="address-list">
+        <button type="button" id="reconcile">Push the address list to Cloudflare again</button>
+        <p id="reconcile-status" role="status"></p>
+      </footer>
     </main>
 
     <template id="ticket-template">

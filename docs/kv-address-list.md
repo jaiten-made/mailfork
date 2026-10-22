@@ -9,6 +9,17 @@ The Email Worker decides whether to forward or reject mail by looking the recipi
 
 Nothing else goes in KV: no Labels, no Profile ids, no timestamps and never the Personal Inbox. Cloudflare's copy reveals only which addresses exist and whether they still accept mail.
 
+## How the admin app writes it
+
+The Profile registry is the source of truth, and KV is a projection of it.
+
+- **After each change** (create or Retire), the registry write commits first, then the publisher pushes that one address.
+- **A full reconcile** pushes every issued address with its status and deletes every key the registry doesn't know. It runs on start-up, every night at 03:00 local time, and on demand from the page.
+- **Pushes and reconciles run one at a time**, so a reconcile never deletes an address pushed after it read the registry.
+- **A failed push or reconcile** leaves the registry change committed and shows a banner on the page until a reconcile succeeds. A later successful single push doesn't clear it, since the failed address may still be wrong in KV.
+
+The API token needs Workers KV edit access to this namespace only: reconcile lists keys and deletes them as well as writing values.
+
 ## How the Worker reads it
 
 1. The recipient is normalised (trimmed and lowercased).
