@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+deploy/secrets/
+# Pi settings and secrets, if kept in the repo checkout for testing.
+admin.env
+tunnel-token
+cloudflare-api-token

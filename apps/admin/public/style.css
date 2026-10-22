@@ -1,0 +1,653 @@
+/* Coat-check tickets: the address is the half you hand out, the stub with
+   the Label is the half you keep. Cloakroom red marks the counter. */
+:root {
+  --ticket-red: #b3123a;
+  --ticket-red-deep: #8c0c2c;
+  --ticket-red-dark: #5c0619;
+  --on-red: #fff6f7;
+  --on-red-soft: #ffd9df;
+  --ground: #eef0f3;
+  --paper: #ffffff;
+  --ink: #16181d;
+  --ink-soft: #4d5360;
+  --rule: #c9ced8;
+  --focus: #1f5fd1;
+  --error: #b3123a;
+  --ok: #1d6b45;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgb(22 24 29 / 0.08), 0 4px 12px rgb(22 24 29 / 0.06);
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ticket-red: #8f0f2f;
+    --ticket-red-deep: #6e0a23;
+    --ticket-red-dark: #47040f;
+    --ground: #121418;
+    --paper: #1d2027;
+    --ink: #eceef2;
+    --ink-soft: #a9afbb;
+    --rule: #3a3f4a;
+    --focus: #7aa7ff;
+    --error: #ff8fa3;
+    --ok: #79d4a3;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 1rem/1.5 var(--sans);
+  font-variant-numeric: tabular-nums;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--ticket-red);
+  color: var(--on-red);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+h1,
+h2 {
+  margin: 0;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+/* The counter: where tickets are issued. */
+.counter {
+  background: var(--ticket-red);
+  color: var(--on-red);
+  padding: 20px 0 24px;
+}
+
+.counter h1 {
+  font-size: 1.5rem;
+  font-weight: 650;
+  margin-bottom: 20px;
+}
+
+.create label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.create-row {
+  display: flex;
+  gap: 8px;
+}
+
+.create input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1.0625rem;
+}
+
+.create input::placeholder {
+  color: var(--ink-soft);
+}
+
+.create input:focus-visible {
+  outline-color: var(--on-red);
+}
+
+.create button {
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid var(--on-red);
+  border-radius: var(--radius);
+  background: var(--ticket-red-deep);
+  color: var(--on-red);
+  font-weight: 650;
+}
+
+.create button:hover:not(:disabled) {
+  background: var(--ticket-red-dark);
+}
+
+.create button:focus-visible {
+  outline-color: var(--on-red);
+}
+
+.custom {
+  margin-top: 12px;
+}
+
+.custom summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 32px;
+}
+
+.custom[open] summary {
+  margin-bottom: 8px;
+}
+
+.custom input {
+  width: 100%;
+}
+
+.custom input[aria-invalid="true"] {
+  border-color: var(--on-red);
+  border-width: 2px;
+}
+
+.custom .hint {
+  margin: 8px 0 0;
+  font-size: 0.9375rem;
+}
+
+.create .error {
+  margin: 10px 0 0;
+  color: var(--on-red);
+  font-weight: 600;
+}
+
+main {
+  padding-top: 24px;
+  padding-bottom: 48px;
+}
+
+main h2 {
+  font-size: 1.25rem;
+  font-weight: 650;
+  margin: 8px 0 12px;
+}
+
+.count {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+.error {
+  color: var(--error);
+  margin: 0 0 12px;
+}
+
+.empty {
+  color: var(--ink-soft);
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* Tickets: a stub and a body divided by a perforation with notches. */
+.tickets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.ticket {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.ticket-stub,
+.ticket-body {
+  padding: 12px 16px;
+  min-width: 0;
+}
+
+.ticket-stub {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+}
+
+.ticket-stub > :not(.ticket-actions) {
+  grid-column: 1;
+}
+
+.ticket-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px dashed var(--rule);
+}
+
+/* The notches either end of the perforation. */
+.ticket-body::before,
+.ticket-body::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ground);
+}
+
+.ticket-body::before {
+  left: -7px;
+}
+
+.ticket-body::after {
+  right: -7px;
+}
+
+.ticket-label {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.created {
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+.address {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 0.9375rem;
+  overflow-wrap: break-word;
+}
+
+.copy {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-weight: 600;
+}
+
+.copy svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.copy:hover {
+  border-color: var(--ink-soft);
+}
+
+.copy[data-state="copied"] {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.ticket-actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  gap: 12px;
+}
+
+/* On a phone, Rename and Retire would squeeze the created-at onto two
+   lines, so they get a row of their own. */
+@container (max-width: 400px) {
+  .ticket-actions {
+    grid-column: 1;
+    grid-row: auto;
+    margin: 2px 0 -10px -4px;
+  }
+}
+
+.rename,
+.retire {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rename:hover {
+  color: var(--ink);
+}
+
+.retire:hover {
+  color: var(--error);
+}
+
+.ticket-stub > .rename-form {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.rename-form input {
+  flex: 1 1 12rem;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.rename-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.rename-actions button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-weight: 600;
+}
+
+.rename-actions button[type="submit"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.rename-form .error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* Retire: typed confirmation under the ticket, since it can't be undone. */
+.retire-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.retire-form > p,
+.retire-form > label {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.retire-warning {
+  color: var(--ink-soft);
+  max-width: 60ch;
+}
+
+.retire-form label {
+  font-weight: 600;
+}
+
+.retire-form label .address {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.retire-form input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-family: var(--mono);
+}
+
+.retire-form input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.retire-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.retire-actions button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-weight: 600;
+}
+
+.retire-actions button[type="submit"] {
+  background: var(--ticket-red);
+  border-color: var(--ticket-red);
+  color: var(--on-red);
+}
+
+.retire-actions button[type="submit"]:hover:not(:disabled) {
+  background: var(--ticket-red-deep);
+}
+
+/* After a Retire: says which address and how long KV takes. */
+.retired-notice {
+  margin-bottom: 28px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--ticket-red);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.retired-notice p {
+  margin: 0;
+  max-width: 60ch;
+}
+
+.retired-notice .address {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* After a failed push: KV may not match the registry until a reconcile. */
+.push-failed {
+  margin-bottom: 28px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--error);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.push-failed h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--error);
+}
+
+.push-failed p {
+  margin: 0 0 12px;
+  max-width: 60ch;
+}
+
+.push-failed button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--ticket-red);
+  color: var(--on-red);
+  font-weight: 600;
+}
+
+.push-failed button:hover:not(:disabled) {
+  background: var(--ticket-red-deep);
+}
+
+.push-failed .error {
+  margin: 12px 0 0;
+}
+
+/* On-demand reconcile: rarely needed, so kept quiet below the lists. */
+.address-list {
+  margin-top: 36px;
+}
+
+.address-list button {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.address-list button:hover {
+  color: var(--ink);
+}
+
+.address-list p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+/* Retired tickets: handed back, so muted and with nothing left to copy. */
+.retired-section {
+  margin-top: 36px;
+}
+
+.retired-section .empty {
+  margin-bottom: 12px;
+}
+
+.ticket-retired {
+  background: transparent;
+  box-shadow: none;
+  border: 1px dashed var(--rule);
+}
+
+.ticket-retired .ticket-label,
+.ticket-retired .address {
+  color: var(--ink-soft);
+}
+
+.ticket-retired .address {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.ticket-retired .ticket-body::before,
+.ticket-retired .ticket-body::after {
+  display: none;
+}
+
+.retired-at {
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+/* The ticket just issued: the address at reading-out size. */
+.issued {
+  margin-bottom: 28px;
+}
+
+.ticket-new .address {
+  font-size: 1.1875rem;
+  font-weight: 600;
+}
+
+.notice {
+  margin: 12px 0 0;
+  color: var(--ink-soft);
+  max-width: 60ch;
+}
+
+@media (min-width: 560px) {
+  .counter {
+    padding: 28px 0 32px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .issued:not([hidden]) .ticket-new {
+    animation: issue 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes issue {
+    from {
+      transform: translateY(-12px);
+      clip-path: inset(0 0 100% 0);
+    }
+    to {
+      transform: none;
+      clip-path: inset(0 0 -20px 0);
+    }
+  }
+}

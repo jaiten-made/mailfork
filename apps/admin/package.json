@@ -1,0 +1,19 @@
+{
+  "name": "@private-profile/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "start": "node src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.5",
+    "@private-profile/shared": "workspace:*",
+    "hono": "^4.13.13",
+    "jose": "^6.2.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2"
+  }
+}

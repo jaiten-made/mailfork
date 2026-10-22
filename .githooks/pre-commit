@@ -1,0 +1,11 @@
+#!/bin/sh
+# Git flow: commit on a feature branch cut from develop, then open a PR.
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || true)
+case "$branch" in
+  main | develop)
+    echo "pre-commit: commit on a feature/<issue>-<slug> branch off develop, not on $branch." >&2
+    exit 1
+    ;;
+esac
+
+exec scripts/check-dashes.sh
