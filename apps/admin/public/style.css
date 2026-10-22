@@ -229,6 +229,7 @@ main h2 {
 }
 
 .ticket-stub {
+  container-type: inline-size;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -236,7 +237,7 @@ main h2 {
   row-gap: 2px;
 }
 
-.ticket-stub > :not(.rename) {
+.ticket-stub > :not(.ticket-actions) {
   grid-column: 1;
 }
 
@@ -317,9 +318,25 @@ main h2 {
   color: var(--ok);
 }
 
-.rename {
+.ticket-actions {
   grid-column: 2;
   grid-row: 1 / span 2;
+  display: flex;
+  gap: 12px;
+}
+
+/* On a phone, Rename and Retire would squeeze the created-at onto two
+   lines, so they get a row of their own. */
+@container (max-width: 400px) {
+  .ticket-actions {
+    grid-column: 1;
+    grid-row: auto;
+    margin: 2px 0 -10px -4px;
+  }
+}
+
+.rename,
+.retire {
   min-height: 44px;
   padding: 0 4px;
   border: 0;
@@ -332,6 +349,10 @@ main h2 {
 
 .rename:hover {
   color: var(--ink);
+}
+
+.retire:hover {
+  color: var(--error);
 }
 
 .ticket-stub > .rename-form {
@@ -374,6 +395,129 @@ main h2 {
 .rename-form .error {
   flex-basis: 100%;
   margin: 0;
+}
+
+/* Retire: typed confirmation under the ticket, since it can't be undone. */
+.retire-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.retire-form > p,
+.retire-form > label {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.retire-warning {
+  color: var(--ink-soft);
+  max-width: 60ch;
+}
+
+.retire-form label {
+  font-weight: 600;
+}
+
+.retire-form label .address {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.retire-form input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-family: var(--mono);
+}
+
+.retire-form input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.retire-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.retire-actions button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-weight: 600;
+}
+
+.retire-actions button[type="submit"] {
+  background: var(--ticket-red);
+  border-color: var(--ticket-red);
+  color: var(--on-red);
+}
+
+.retire-actions button[type="submit"]:hover:not(:disabled) {
+  background: var(--ticket-red-deep);
+}
+
+/* After a Retire: says which address and how long KV takes. */
+.retired-notice {
+  margin-bottom: 28px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--ticket-red);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.retired-notice p {
+  margin: 0;
+  max-width: 60ch;
+}
+
+.retired-notice .address {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Retired tickets: handed back, so muted and with nothing left to copy. */
+.retired-section {
+  margin-top: 36px;
+}
+
+.retired-section .empty {
+  margin-bottom: 12px;
+}
+
+.ticket-retired {
+  background: transparent;
+  box-shadow: none;
+  border: 1px dashed var(--rule);
+}
+
+.ticket-retired .ticket-label,
+.ticket-retired .address {
+  color: var(--ink-soft);
+}
+
+.ticket-retired .address {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.ticket-retired .ticket-body::before,
+.ticket-retired .ticket-body::after {
+  display: none;
+}
+
+.retired-at {
+  color: var(--ink-soft);
+  font-size: 0.875rem;
 }
 
 /* The ticket just issued: the address at reading-out size. */
