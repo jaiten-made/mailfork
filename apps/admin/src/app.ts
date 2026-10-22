@@ -1,4 +1,9 @@
-import { generateLocalPart, normaliseAddress, type RandomSource } from "@private-profile/shared";
+import {
+  checkCustomLocalPart,
+  generateLocalPart,
+  normaliseAddress,
+  type RandomSource,
+} from "@private-profile/shared";
 import { readFileSync } from "node:fs";
 import { Hono, type Context } from "hono";
 import { secureHeaders } from "hono/secure-headers";
@@ -17,24 +22,30 @@ export interface AppDeps {
 
 const MAX_LABEL_LENGTH = 100;
 
-/** A string field of a JSON object body, or null if it is missing. */
-async function readJsonString(c: Context, field: string): Promise<string | null> {
+/** The JSON object body, or null if there is none. */
+async function readJsonObject(c: Context): Promise<Record<string, unknown> | null> {
   // Only application/json needs a CORS preflight, so this refuses a
   // cross-site form post that rides on the Access cookie.
   const contentType = c.req.header("Content-Type") ?? "";
   if (contentType.split(";")[0]?.trim().toLowerCase() !== "application/json") return null;
   const body: unknown = await c.req.json().catch(() => null);
   if (typeof body !== "object" || body === null) return null;
-  const value: unknown = (body as Record<string, unknown>)[field];
+  return body as Record<string, unknown>;
+}
+
+/** A string field of a JSON object body, or null if it is missing. */
+async function readJsonString(c: Context, field: string): Promise<string | null> {
+  const value = (await readJsonObject(c))?.[field];
   return typeof value === "string" ? value : null;
 }
 
 /** The trimmed Label from a `{ "label": string }` body, or null if it is unusable. */
-async function readLabel(c: Context): Promise<string | null> {
-  const label = (await readJsonString(c, "label"))?.trim();
-  if (label === undefined) return null;
-  if (label === "" || label.length > MAX_LABEL_LENGTH) return null;
-  return label;
+function readLabel(body: Record<string, unknown> | null): string | null {
+  const label = body?.label;
+  if (typeof label !== "string") return null;
+  const trimmed = label.trim();
+  if (trimmed === "" || trimmed.length > MAX_LABEL_LENGTH) return null;
+  return trimmed;
 }
 
 const INVALID_LABEL = {
@@ -55,6 +66,10 @@ function loadPageRoutes() {
     body: readFileSync(new URL(`../public/${file}`, import.meta.url), "utf8"),
   }));
 }
+
+const NOT_A_STRING = { error: "A Custom Address must be text." };
+
+const ALREADY_ISSUED = { error: "That address was issued before." };
 
 const NOT_FOUND = { error: "No such Profile." };
 
@@ -109,15 +124,58 @@ export function createApp(deps: AppDeps) {
 
   app.get("/api/profiles/retired", (c) => c.json({ profiles: deps.registry.listRetired() }));
 
+  /**
+   * The Profile Address a Custom Address local part would get, or the
+   * reason it can't be issued. Uniqueness ignores case because Profile
+   * Addresses are stored normalised.
+   */
+  function checkCustomAddress(raw: string) {
+    const check = checkCustomLocalPart(raw);
+    if (!check.valid) return { refusal: { error: check.reason }, status: 400 } as const;
+    const profileAddress = `${check.localPart}@${deps.profileDomain}`;
+    if (deps.registry.wasIssued(profileAddress)) {
+      return { refusal: ALREADY_ISSUED, status: 409 } as const;
+    }
+    return { profileAddress };
+  }
+
+  app.post("/api/custom-addresses/check", async (c) => {
+    const raw = await readJsonString(c, "customLocalPart");
+    if (raw === null) return c.json(NOT_A_STRING, 400);
+    const checked = checkCustomAddress(raw);
+    if (checked.refusal) return c.json(checked.refusal, checked.status);
+    return c.json({ profileAddress: checked.profileAddress });
+  });
+
   app.post("/api/profiles", async (c) => {
-    const label = await readLabel(c);
+    const body = await readJsonObject(c);
+    const label = readLabel(body);
     if (label === null) return c.json(INVALID_LABEL, 400);
 
-    const profile = deps.registry.createWithGeneratedAddress(
+    // A missing or blank Custom Address means the default, a Generated Address.
+    const customLocalPart = body?.customLocalPart;
+    if (customLocalPart !== undefined && typeof customLocalPart !== "string") {
+      return c.json(NOT_A_STRING, 400);
+    }
+    if (customLocalPart === undefined || customLocalPart.trim() === "") {
+      const profile = deps.registry.createWithGeneratedAddress(
+        label,
+        () => `${generateLocalPart(deps.random)}@${deps.profileDomain}`,
+        deps.now(),
+      );
+      await publish(profile.profileAddress, "live");
+      return c.json(profile, 201);
+    }
+
+    const checked = checkCustomAddress(customLocalPart);
+    if (checked.refusal) return c.json(checked.refusal, checked.status);
+    // The insert itself refuses an address issued since the check.
+    const profile = deps.registry.createWithCustomAddress(
       label,
-      () => `${generateLocalPart(deps.random)}@${deps.profileDomain}`,
+      checked.profileAddress,
       deps.now(),
     );
+    if (!profile) return c.json(ALREADY_ISSUED, 409);
     await publish(profile.profileAddress, "live");
     return c.json(profile, 201);
   });
@@ -125,7 +183,7 @@ export function createApp(deps: AppDeps) {
   app.patch("/api/profiles/:id", async (c) => {
     const id = Number(c.req.param("id"));
     if (!Number.isSafeInteger(id)) return c.json(NOT_FOUND, 404);
-    const label = await readLabel(c);
+    const label = readLabel(await readJsonObject(c));
     if (label === null) return c.json(INVALID_LABEL, 400);
 
     // Retire is final, Label included.

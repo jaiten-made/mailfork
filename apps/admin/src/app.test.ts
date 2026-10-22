@@ -81,10 +81,10 @@ function startAdmin({
     return app.request(path, { ...rest, headers });
   }
 
-  const create = (label: string) =>
+  const create = (label: string, customLocalPart?: unknown) =>
     request("/api/profiles", {
       method: "POST",
-      body: JSON.stringify({ label }),
+      body: JSON.stringify({ label, customLocalPart }),
     });
 
   return {
@@ -108,6 +108,11 @@ function startAdmin({
         body: JSON.stringify({ confirmation }),
       }),
     listRetired: async () => (await request("/api/profiles/retired")).json(),
+    checkCustomAddress: (customLocalPart: unknown) =>
+      request("/api/custom-addresses/check", {
+        method: "POST",
+        body: JSON.stringify({ customLocalPart }),
+      }),
   };
 }
 
@@ -209,6 +214,225 @@ describe("giving up on generation", () => {
     expect(response.status).toBe(500);
     expect(await admin.list()).toMatchObject({ profiles: [{ label: "Shopping" }] });
     expect(kv.puts).toEqual([{ key: "quiet.otter.42@profile.example", value: "live" }]);
+  });
+});
+
+describe("creating a Profile with a Custom Address", () => {
+  it("gives the Profile exactly the Custom Address chosen, on the Profile Domain", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [], addressList: kv.target });
+
+    const response = await admin.create("Shopping", "shop.2026");
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({
+      id: expect.any(Number),
+      label: "Shopping",
+      profileAddress: "shop.2026@profile.example",
+      createdAt: CREATED_AT,
+    });
+    expect(kv.puts).toEqual([{ key: "shop.2026@profile.example", value: "live" }]);
+  });
+
+  it("normalises a Custom Address to lowercase", async () => {
+    const admin = startAdmin({ random: [] });
+
+    const response = await admin.create("Shopping", "  Shop-Front.NZ ");
+
+    expect(await response.json()).toMatchObject({
+      profileAddress: "shop-front.nz@profile.example",
+    });
+  });
+
+  it.each(["abc", "a".repeat(32), "a.b-c", "0-9"])(
+    "accepts the Custom Address %j at the edges of the rules",
+    async (customLocalPart) => {
+      const admin = startAdmin({ random: [] });
+
+      const response = await admin.create("Shopping", customLocalPart);
+
+      expect(response.status).toBe(201);
+    },
+  );
+
+  it("gives a Generated Address when the Custom Address is left blank", async () => {
+    const admin = startAdmin({ random: [QUIET, OTTER, 42] });
+
+    const response = await admin.create("Shopping", "  ");
+
+    expect(await response.json()).toMatchObject({
+      profileAddress: "quiet.otter.42@profile.example",
+    });
+  });
+
+  it("refuses a Custom Address that is not a string", async () => {
+    const admin = startAdmin({ random: [] });
+
+    const response = await admin.create("Shopping", 42);
+
+    expect(response.status).toBe(400);
+    expect(await admin.list()).toEqual({ profiles: [] });
+  });
+
+  it.each([
+    ["shop_front", "A Custom Address can only use the letters a to z, digits, dots and hyphens."],
+    ["shop front", "A Custom Address can only use the letters a to z, digits, dots and hyphens."],
+    ["shop+tag", "A Custom Address can only use the letters a to z, digits, dots and hyphens."],
+    ["shop@profile.example", "A Custom Address can only use the letters a to z, digits, dots and hyphens."],
+    ["caf\u00e9", "A Custom Address can only use the letters a to z, digits, dots and hyphens."],
+    ["ab", "A Custom Address must be 3 to 32 characters long."],
+    ["a".repeat(33), "A Custom Address must be 3 to 32 characters long."],
+    [".shop", "A Custom Address can't start or end with a dot or a hyphen."],
+    ["shop.", "A Custom Address can't start or end with a dot or a hyphen."],
+    ["-shop", "A Custom Address can't start or end with a dot or a hyphen."],
+    ["shop-", "A Custom Address can't start or end with a dot or a hyphen."],
+    ["shop..front", "A Custom Address can't have two dots or hyphens in a row."],
+    ["shop--front", "A Custom Address can't have two dots or hyphens in a row."],
+    ["shop.-front", "A Custom Address can't have two dots or hyphens in a row."],
+    ["shop-.front", "A Custom Address can't have two dots or hyphens in a row."],
+  ])("refuses the Custom Address %j with a clear reason", async (customLocalPart, error) => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [], addressList: kv.target });
+
+    const response = await admin.create("Shopping", customLocalPart);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error });
+    expect(await admin.list()).toEqual({ profiles: [] });
+    expect(kv.puts).toEqual([]);
+  });
+
+  it.each(["postmaster", "abuse", "admin", "noreply", "reply", "PostMaster", "NoReply"])(
+    "refuses the reserved name %j",
+    async (customLocalPart) => {
+      const kv = recordingKv();
+      const admin = startAdmin({ random: [], addressList: kv.target });
+
+      const response = await admin.create("Shopping", customLocalPart);
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        error: "That address is reserved for the Profile Domain.",
+      });
+      expect(await admin.list()).toEqual({ profiles: [] });
+      expect(kv.puts).toEqual([]);
+    },
+  );
+
+  it.each(["shop.2026", "SHOP.2026", "Shop.2026"])(
+    "refuses %j while a live Profile has shop.2026",
+    async (customLocalPart) => {
+      const kv = recordingKv();
+      const admin = startAdmin({ random: [], addressList: kv.target });
+      await admin.create("Shopping", "shop.2026");
+
+      const response = await admin.create("Travel", customLocalPart);
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ error: "That address was issued before." });
+      expect(await admin.list()).toMatchObject({ profiles: [{ label: "Shopping" }] });
+      expect(kv.puts).toEqual([{ key: "shop.2026@profile.example", value: "live" }]);
+    },
+  );
+
+  it.each(["faded.fox.07", "FADED.FOX.07", "Faded.Fox.07"])(
+    "refuses %j once faded.fox.07 is a Retired Address",
+    async (customLocalPart) => {
+      const admin = startAdmin({ random: [FADED, FOX, 7] });
+      const dating = await admin.createProfile("Dating");
+      await admin.retire(dating.id, "faded.fox.07@profile.example");
+
+      const response = await admin.create("Travel", customLocalPart);
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ error: "That address was issued before." });
+      expect(await admin.list()).toEqual({ profiles: [] });
+    },
+  );
+
+  it("never issues a Custom Address as a Generated Address: a seeded source that regenerates it causes a retry", async () => {
+    const admin = startAdmin({ random: [QUIET, OTTER, 42, FADED, FOX, 7] });
+    await admin.create("Shopping", "quiet.otter.42");
+
+    const response = await admin.create("Travel");
+
+    expect(await response.json()).toMatchObject({
+      profileAddress: "faded.fox.07@profile.example",
+    });
+  });
+
+  it("checks the Label before the Custom Address", async () => {
+    const admin = startAdmin({ random: [] });
+
+    const response = await admin.create("", "postmaster");
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "A Label must be 1 to 100 characters." });
+  });
+});
+
+// The page calls this as the Owner types, so it shows a bad or taken address
+// before the form is submitted.
+describe("checking a Custom Address before creating", () => {
+  it("answers with the Profile Address a valid, unissued Custom Address would get", async () => {
+    const admin = startAdmin({ random: [] });
+
+    const response = await admin.checkCustomAddress(" Shop.2026 ");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ profileAddress: "shop.2026@profile.example" });
+  });
+
+  it.each([
+    ["shop_front", 400, "A Custom Address can only use the letters a to z, digits, dots and hyphens."],
+    ["ab", 400, "A Custom Address must be 3 to 32 characters long."],
+    ["shop.", 400, "A Custom Address can't start or end with a dot or a hyphen."],
+    ["shop..front", 400, "A Custom Address can't have two dots or hyphens in a row."],
+    ["Abuse", 400, "That address is reserved for the Profile Domain."],
+    ["", 400, "A Custom Address must be 3 to 32 characters long."],
+  ])("refuses %j with the reason create would give", async (customLocalPart, status, error) => {
+    const admin = startAdmin({ random: [] });
+
+    const response = await admin.checkCustomAddress(customLocalPart);
+
+    expect(response.status).toBe(status);
+    expect(await response.json()).toEqual({ error });
+  });
+
+  it("refuses a Custom Address issued to a live or Retired Profile, in any case", async () => {
+    const admin = startAdmin({ random: [FADED, FOX, 7] });
+    await admin.create("Shopping", "shop.2026");
+    const dating = await admin.createProfile("Dating");
+    await admin.retire(dating.id, "faded.fox.07@profile.example");
+
+    for (const customLocalPart of ["SHOP.2026", "Faded.Fox.07"]) {
+      const response = await admin.checkCustomAddress(customLocalPart);
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ error: "That address was issued before." });
+    }
+  });
+
+  it("neither creates a Profile nor pushes to KV", async () => {
+    const kv = recordingKv();
+    const admin = startAdmin({ random: [], addressList: kv.target });
+
+    await admin.checkCustomAddress("shop.2026");
+
+    expect(await admin.list()).toEqual({ profiles: [] });
+    expect(kv.puts).toEqual([]);
+  });
+
+  it("refuses a check that is not sent as application/json", async () => {
+    const admin = startAdmin({ random: [] });
+
+    const response = await admin.request("/api/custom-addresses/check", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ customLocalPart: "shop.2026" }),
+    });
+
+    expect(response.status).toBe(400);
   });
 });
 
@@ -652,6 +876,10 @@ describe("requiring a Cloudflare Access JWT", () => {
     [
       "/api/profiles/1/retire",
       { method: "POST", body: JSON.stringify({ confirmation: "quiet.otter.42@profile.example" }) },
+    ],
+    [
+      "/api/custom-addresses/check",
+      { method: "POST", body: JSON.stringify({ customLocalPart: "shop.2026" }) },
     ],
     ["/", { method: "GET" }],
     ["/no-such-page", { method: "GET" }],

@@ -61,3 +61,49 @@ const NUMBERS = Array.from({ length: 100 }, (_, n) => String(n).padStart(2, "0")
 export function generateLocalPart(random: RandomSource): string {
   return [ADJECTIVES, NOUNS, NUMBERS].map((choices) => pick(choices, random)).join(".");
 }
+
+/**
+ * Local parts a Custom Address can never take, because the Profile Domain
+ * needs them: the System Addresses, the usual role names and the reply sink.
+ */
+export const RESERVED_LOCAL_PARTS: readonly string[] = [
+  "postmaster",
+  "abuse",
+  "admin",
+  "noreply",
+  "reply",
+];
+
+const MIN_CUSTOM_LENGTH = 3;
+const MAX_CUSTOM_LENGTH = 32;
+
+export type CustomLocalPartCheck =
+  | { valid: true; localPart: string }
+  | { valid: false; reason: string };
+
+/**
+ * Trims and lowercases the local part of a Custom Address, then checks it
+ * against the rules, giving the first rule it breaks as the reason.
+ */
+export function checkCustomLocalPart(raw: string): CustomLocalPartCheck {
+  const localPart = raw.trim().toLowerCase();
+  const refuse = (reason: string) => ({ valid: false, reason }) as const;
+  if (!/^[a-z0-9.-]*$/.test(localPart)) {
+    return refuse("A Custom Address can only use the letters a to z, digits, dots and hyphens.");
+  }
+  if (localPart.length < MIN_CUSTOM_LENGTH || localPart.length > MAX_CUSTOM_LENGTH) {
+    return refuse(
+      `A Custom Address must be ${MIN_CUSTOM_LENGTH} to ${MAX_CUSTOM_LENGTH} characters long.`,
+    );
+  }
+  if (/^[.-]|[.-]$/.test(localPart)) {
+    return refuse("A Custom Address can't start or end with a dot or a hyphen.");
+  }
+  if (/[.-]{2}/.test(localPart)) {
+    return refuse("A Custom Address can't have two dots or hyphens in a row.");
+  }
+  if (RESERVED_LOCAL_PARTS.includes(localPart)) {
+    return refuse("That address is reserved for the Profile Domain.");
+  }
+  return { valid: true, localPart };
+}

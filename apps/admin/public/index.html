@@ -30,6 +30,28 @@
             />
             <button type="submit">Create</button>
           </div>
+          <details id="custom" class="custom">
+            <summary>Choose the address</summary>
+            <label for="create-custom">Custom Address</label>
+            <input
+              id="create-custom"
+              name="customLocalPart"
+              type="text"
+              inputmode="email"
+              maxlength="64"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="Such as shop.2026"
+              aria-describedby="custom-hint custom-error"
+            />
+            <p id="custom-hint" class="hint">
+              Letters a to z, digits, dots and hyphens, 3 to 32 characters.
+              Leave it blank for a Generated Address.
+            </p>
+            <p id="custom-error" class="error" aria-live="polite" hidden></p>
+            <p id="custom-preview" class="hint" aria-live="polite" hidden></p>
+          </details>
           <p id="create-error" class="error" role="alert" hidden></p>
         </form>
       </div>

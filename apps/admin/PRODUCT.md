@@ -28,7 +28,7 @@ Unlike hosted forwarding services, the Profiles live only on the Owner's own Ras
 
 ## Capabilities and Constraints
 
-- Create a Profile from a Label only, getting a Generated Address (`adjective.noun.NN`). Custom Addresses and Retire come later (#5, #6).
+- Create a Profile from a Label, getting a Generated Address (`adjective.noun.NN`) or, optionally, a Custom Address checked as the Owner types.
 - List live Profiles with Label, Profile Address and created-at; rename a Label; copy an address with one tap.
 - Terminology is fixed by GLOSSARY.md: Owner, Profile, Label, Profile Address, Generated Address, Retire. Avoid "alias", "persona", "account", "name".
 - Small surface served by the Node admin app as static HTML, CSS and vanilla JS on its JSON API. No external fonts, scripts or trackers.
