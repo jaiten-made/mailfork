@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.ts";
 import { createAccessVerifier, type AccessVerifier } from "./access.ts";
 import type { AddressListTarget, AddressStatus } from "./address-list.ts";
-import type { BackupTag, BackupTarget } from "./backup.ts";
+import type { BackupTag, BackupTarget, CheckOptions } from "./backup.ts";
 import { openProfileRegistry, type ProfileRegistry } from "./profile-registry.ts";
 import { scheduleNightly } from "./schedule.ts";
 
@@ -92,7 +92,7 @@ function recordingKv(
  */
 function recordingBackups(onBackup?: (tag: BackupTag, signal: AbortSignal) => Promise<void>) {
   const backups: BackupTag[] = [];
-  const checks: { readDataSubset: boolean }[] = [];
+  const checks: CheckOptions[] = [];
   let failing = false;
   let checkFailing = false;
   const target: BackupTarget = {

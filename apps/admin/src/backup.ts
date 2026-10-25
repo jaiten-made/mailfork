@@ -9,6 +9,12 @@ import { backup, DatabaseSync } from "node:sqlite";
  */
 export type BackupTag = "change" | "nightly" | "startup";
 
+/** How thoroughly to check the repository. */
+export interface CheckOptions {
+  /** Also read a sample of the data, not only the structure. */
+  readDataSubset: boolean;
+}
+
 /**
  * Where Backups go: a restic repository on R2. See docs/adr/0003. Each call
  * must stop and throw soon after its signal aborts.
@@ -17,7 +23,7 @@ export interface BackupTarget {
   /** Takes one Backup of the Profile database. Throws if it failed. */
   backup(tag: BackupTag, signal: AbortSignal): Promise<void>;
   /** Checks the repository, reading a sample of the data if asked. Throws if it failed. */
-  check(options: { readDataSubset: boolean }, signal: AbortSignal): Promise<void>;
+  check(options: CheckOptions, signal: AbortSignal): Promise<void>;
 }
 
 /** Runs Backups one at a time and remembers how the latest one went. */
@@ -39,7 +45,7 @@ export interface BackupRunner {
 /** One turn of the runner: a Backup, then a check if the nightly asked for one. */
 interface Run {
   tag: BackupTag;
-  check: { readDataSubset: boolean } | null;
+  check: CheckOptions | null;
 }
 
 /** A Backup or check that takes longer than this is killed and counts as failed. */
@@ -69,7 +75,8 @@ export function createBackupRunner(target: BackupTarget, now: () => Date): Backu
   async function step(what: string, task: (signal: AbortSignal) => Promise<void>) {
     const controller = new AbortController();
     const timer = setTimeout(
-      () => controller.abort(new Error(`${what} took longer than 5 minutes`)),
+      () =>
+        controller.abort(new Error(`${what} took longer than ${TIME_LIMIT_MS / 60_000} minutes`)),
       TIME_LIMIT_MS,
     );
     try {
