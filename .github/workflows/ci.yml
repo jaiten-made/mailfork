@@ -17,5 +17,20 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      # The Backup target's test runs restic against a local repository.
+      # Keep the version in step with apps/admin/Dockerfile.
+      - name: Install restic
+        env:
+          RESTIC_VERSION: 0.19.1
+          RESTIC_SHA256: f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c
+        run: |
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/restic.bz2" \
+            "https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_amd64.bz2"
+          echo "${RESTIC_SHA256}  $RUNNER_TEMP/restic.bz2" | sha256sum --check --strict -
+          mkdir -p "$RUNNER_TEMP/bin"
+          bunzip2 --stdout "$RUNNER_TEMP/restic.bz2" > "$RUNNER_TEMP/bin/restic"
+          chmod 0755 "$RUNNER_TEMP/bin/restic"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/bin/restic" version
       - run: pnpm install --frozen-lockfile
       - run: pnpm check

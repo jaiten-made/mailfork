@@ -23,8 +23,14 @@ services:
       DATABASE_PATH: /data/profiles.db
       NODE_OPTIONS: --max-old-space-size=128
       CLOUDFLARE_API_TOKEN_FILE: /run/secrets/cloudflare-api-token
+      RESTIC_PASSWORD_FILE: /run/secrets/restic-password
+      R2_ACCESS_KEY_ID_FILE: /run/secrets/r2-access-key-id
+      R2_SECRET_ACCESS_KEY_FILE: /run/secrets/r2-secret-access-key
     secrets:
       - cloudflare-api-token
+      - restic-password
+      - r2-access-key-id
+      - r2-secret-access-key
     volumes:
       - admin-data:/data
 
@@ -47,6 +53,14 @@ secrets:
     file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/cloudflare-api-token
   tunnel-token:
     file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/tunnel-token
+  # Backups (docs/adr/0003). Without the restic password the Backups can't
+  # be read, so its source of truth is the Owner's password manager.
+  restic-password:
+    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/restic-password
+  r2-access-key-id:
+    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/r2-access-key-id
+  r2-secret-access-key:
+    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/r2-secret-access-key
 
 volumes:
   admin-data:

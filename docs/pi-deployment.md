@@ -24,11 +24,20 @@ The Owner chose a subdomain of the Profile Domain over a separate domain. The tr
 3. Copy the **Application Audience (AUD) tag** from the application's settings.
 4. Note the team domain, `<team-name>.cloudflareaccess.com`, under **Account details** on the Zero Trust overview.
 
-`scripts/setup-cloudflare.sh` walks through steps 1 to 3 and saves the settings to `deploy/admin.env`.
+## 4. Create the Backup bucket
 
-## 4. Put the settings and secrets on the Pi
+Each Backup is stored as a restic snapshot of the Profile database in R2, encrypted on the Pi before upload (ADR 0003).
 
-They live in `/etc/private-profile`, outside git. The source of truth for both tokens is the Owner's password manager.
+1. In the Cloudflare dashboard, go to **R2 Object Storage > Create bucket** and name it `private-profile-backups`.
+2. Under **Manage API tokens**, create an **Account API token** named `private-profile-backups` with **Object Read & Write** permission, applied to that bucket only. Save its **Access Key ID** and **Secret Access Key** in the password manager.
+3. Generate a long random restic password in the password manager. Without it the Backups can't be read, so it must not live only on the Pi.
+4. The repository is `s3:https://<account id>.r2.cloudflarestorage.com/private-profile-backups`. It goes in `admin.env` as `RESTIC_REPOSITORY`.
+
+`scripts/setup-cloudflare.sh` walks through steps 1 to 4 and saves the settings to `deploy/admin.env`. If `restic` is installed where the wizard runs, it also creates the restic repository, so step 7 can be skipped.
+
+## 5. Put the settings and secrets on the Pi
+
+They live in `/etc/private-profile`, outside git. The source of truth for every token and password is the Owner's password manager.
 
 ```sh
 sudo install -d -m 750 -o root -g "$USER" /etc/private-profile
@@ -36,6 +45,9 @@ sudo install -d -m 750 -o root -g "$USER" /etc/private-profile
 sudo install -m 444 /tmp/admin.env /etc/private-profile/admin.env && rm /tmp/admin.env
 sudoedit /etc/private-profile/tunnel-token           # the token from step 2
 sudoedit /etc/private-profile/cloudflare-api-token   # the KV token from issue #3
+sudoedit /etc/private-profile/restic-password        # the restic password from step 4
+sudoedit /etc/private-profile/r2-access-key-id       # the R2 Access Key ID from step 4
+sudoedit /etc/private-profile/r2-secret-access-key   # the R2 Secret Access Key from step 4
 sudo chmod 444 /etc/private-profile/*
 ```
 
@@ -43,7 +55,7 @@ Only root and the user who runs `docker compose` can open the directory: Compose
 
 To keep them somewhere else, set `PRIVATE_PROFILE_CONFIG` to that directory when running Compose.
 
-## 5. Get the code
+## 6. Get the code
 
 The repo is private, so the Pi clones it with a read-only deploy key that can't push:
 
@@ -57,7 +69,18 @@ cd ~/private-profile
 
 Deploy from `main` once a release has been cut.
 
-## 6. Start it
+## 7. Create the restic repository
+
+Skip this if the wizard created it. The admin app never runs `restic init`: it reports a missing repository as a failed Backup instead. This runs `restic init` once in the admin image, with the settings and secrets from step 5:
+
+```sh
+docker compose run --rm --no-deps --entrypoint sh admin -c \
+  'AWS_ACCESS_KEY_ID=$(cat /run/secrets/r2-access-key-id) AWS_SECRET_ACCESS_KEY=$(cat /run/secrets/r2-secret-access-key) restic init'
+```
+
+`restic` reads the repository from `RESTIC_REPOSITORY` and the password from `RESTIC_PASSWORD_FILE`, both already set in the container. The same command with `restic snapshots` in place of `restic init` lists the Backups.
+
+## 8. Start it
 
 ```sh
 sudo systemctl enable --now docker
@@ -69,11 +92,21 @@ The admin app logs `Admin app listening on port 8080`, and `cloudflared` logs re
 
 The Profile database is in the `private-profile_admin-data` volume, at `/data/profiles.db` inside the admin container.
 
-To update, run `scripts/deploy-pi.sh` from your own checkout once a release is on `main`. Over SSH it moves the Pi's checkout to `main` (or a release tag: `scripts/deploy-pi.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the Pi's checkout has local changes. `PI_HOST` and `PI_DIR` override `user@server` and `~/private-profile`.
+The admin app takes a Backup on start-up, after every create, rename and Retire, and nightly at 03:00, followed by `restic check`. Before each Backup it copies the database with SQLite's online backup to `/data/backup/profiles.db`, and restic backs up that copy. restic's cache is in `/data/restic-cache`. A failed Backup or check shows a banner on the admin page and logs the reason.
+
+restic runs inside the admin container, so a Backup counts against its `mem_limit` in `compose.yaml`. The first `docker compose up` takes the start-up Backup; to measure it, watch the container while it runs (or while a create triggers another):
+
+```sh
+docker stats $(docker compose ps -q admin)
+```
+
+Note the highest **MEM USAGE**. Raise `mem_limit` only if a Backup comes close to it or is killed, and to 384 MiB at most, with the measured figure in the comment above it.
+
+To update, run `scripts/deploy-pi.sh` from your own checkout once a release is on `main`. Over SSH it moves the Pi's checkout to `main` (or a release tag: `scripts/deploy-pi.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the Pi's checkout has local changes, and before touching the containers if a secret file from step 5 is missing. `PI_HOST` and `PI_DIR` override `user@server` and `~/private-profile`.
 
 By hand on the Pi, the same update is `git pull`, then `docker compose up -d --build`.
 
-## 7. Check the acceptance criteria (issue #8)
+## 9. Check the acceptance criteria (issue #8)
 
 - **Admin hostname is hard to guess.** The tunnel's only route is the admin hostname from step 1, and nothing on the bare Profile Domain points at the tunnel.
 - **No inbound ports.** `docker compose ps` shows no published ports, `sudo ss -tlnp` on the Pi shows nothing new listening on a public interface, and the router has no port forwards to the Pi.

@@ -6,6 +6,11 @@ export interface Config {
   profileDomain: string;
   access: { teamDomain: string; audience: string };
   kv: { accountId: string; namespaceId: string; apiToken: string };
+  backup: {
+    repository: string;
+    password: string;
+    r2: { accessKeyId: string; secretAccessKey: string };
+  };
 }
 
 /**
@@ -33,6 +38,14 @@ export function readConfig(env: NodeJS.ProcessEnv): Config {
       accountId: required("CLOUDFLARE_ACCOUNT_ID"),
       namespaceId: required("KV_NAMESPACE_ID"),
       apiToken: required("CLOUDFLARE_API_TOKEN"),
+    },
+    backup: {
+      repository: required("RESTIC_REPOSITORY"),
+      password: required("RESTIC_PASSWORD"),
+      r2: {
+        accessKeyId: required("R2_ACCESS_KEY_ID"),
+        secretAccessKey: required("R2_SECRET_ACCESS_KEY"),
+      },
     },
   };
   if (missing.length > 0) {
