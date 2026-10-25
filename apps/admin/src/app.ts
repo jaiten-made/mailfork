@@ -13,6 +13,7 @@ import {
   type AddressListTarget,
   type AddressStatus,
 } from "./address-list.ts";
+import { createBackupRunner, type BackupTarget } from "./backup.ts";
 import type { ProfileRegistry } from "./profile-registry.ts";
 
 export interface AppDeps {
@@ -24,6 +25,8 @@ export interface AppDeps {
   now: () => Date;
   /** Registers a task to run every night. */
   everyNight: (task: () => Promise<unknown>) => void;
+  /** Where Backups of the Profile database go. */
+  backup: BackupTarget;
 }
 
 const MAX_LABEL_LENGTH = 100;
@@ -107,7 +110,15 @@ export function createApp(deps: AppDeps) {
     return issued;
   });
   void publisher.reconcile();
-  deps.everyNight(() => publisher.reconcile());
+
+  const backups = createBackupRunner(deps.backup, deps.now);
+  void backups.backUp("startup");
+
+  deps.everyNight(() => Promise.all([publisher.reconcile(), backups.nightly()]));
+
+  // Called once a registry write has committed, so the Backup holds it. The
+  // response doesn't wait, and a failed Backup never undoes the change.
+  const backUpChange = () => void backups.backUp("change");
 
   // Called once the registry write has committed, so KV never holds an
   // address or status the registry lacks. A failed push shows on the page
@@ -147,6 +158,14 @@ export function createApp(deps: AppDeps) {
     if (!isJsonRequest(c)) return c.json({ error: "Send the reconcile as application/json." }, 400);
     if (!(await publisher.reconcile())) return c.json(RECONCILE_FAILED, 502);
     return c.json({ pushFailed: publisher.pushFailed });
+  });
+
+  app.get("/api/backup", (c) => {
+    const { backupFailed, lastSuccessfulBackupAt } = backups.status;
+    return c.json({
+      backupFailed,
+      lastSuccessfulBackupAt: lastSuccessfulBackupAt?.toISOString() ?? null,
+    });
   });
 
   app.get("/api/profiles", (c) => c.json({ profiles: deps.registry.listLive() }));
@@ -192,6 +211,7 @@ export function createApp(deps: AppDeps) {
         () => `${generateLocalPart(deps.random)}@${deps.profileDomain}`,
         deps.now(),
       );
+      backUpChange();
       await publish(profile.profileAddress, "live");
       return c.json(profile, 201);
     }
@@ -205,6 +225,7 @@ export function createApp(deps: AppDeps) {
       deps.now(),
     );
     if (!profile) return c.json(ALREADY_ISSUED, 409);
+    backUpChange();
     await publish(profile.profileAddress, "live");
     return c.json(profile, 201);
   });
@@ -220,7 +241,9 @@ export function createApp(deps: AppDeps) {
       return c.json({ error: "A Retired Profile can't be renamed." }, 409);
     }
     const profile = deps.registry.rename(id, label);
-    return profile ? c.json(profile) : c.json(NOT_FOUND, 404);
+    if (!profile) return c.json(NOT_FOUND, 404);
+    backUpChange();
+    return c.json(profile);
   });
 
   app.post("/api/profiles/:id/retire", async (c) => {
@@ -238,6 +261,7 @@ export function createApp(deps: AppDeps) {
     // Rows are never deleted, so no Profile here means it was Retired before.
     const profile = deps.registry.retire(id, deps.now());
     if (!profile) return c.json(ALREADY_RETIRED, 409);
+    backUpChange();
     await publish(profile.profileAddress, "retired");
     return c.json(profile);
   });

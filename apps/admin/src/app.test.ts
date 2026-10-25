@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.ts";
 import { createAccessVerifier, type AccessVerifier } from "./access.ts";
 import type { AddressListTarget, AddressStatus } from "./address-list.ts";
+import type { BackupTag, BackupTarget } from "./backup.ts";
 import { openProfileRegistry, type ProfileRegistry } from "./profile-registry.ts";
 import { scheduleNightly } from "./schedule.ts";
 
@@ -83,18 +84,56 @@ function recordingKv(
   };
 }
 
+/**
+ * A fake Backup target that records the tag of each Backup and each check.
+ * `onBackup` runs at the start of a Backup, so a test can hold it open or
+ * look at the registry. While `fail()` is on, Backups and checks throw, as
+ * when R2 is unreachable; `failCheck()` fails only checks.
+ */
+function recordingBackups(onBackup?: (tag: BackupTag, signal: AbortSignal) => Promise<void>) {
+  const backups: BackupTag[] = [];
+  const checks: { readDataSubset: boolean }[] = [];
+  let failing = false;
+  let checkFailing = false;
+  const target: BackupTarget = {
+    async backup(tag, signal) {
+      await onBackup?.(tag, signal);
+      if (failing) throw new Error("R2 unreachable");
+      backups.push(tag);
+    },
+    async check(options) {
+      if (failing) throw new Error("R2 unreachable");
+      if (checkFailing) throw new Error("Pack 4f2a is damaged");
+      checks.push(options);
+    },
+  };
+  return {
+    target,
+    backups,
+    checks,
+    fail: (on = true) => {
+      failing = on;
+    },
+    failCheck: (on = true) => {
+      checkFailing = on;
+    },
+  };
+}
+
 function startAdmin({
   random = [QUIET, OTTER, 42],
   addressList = recordingKv().target,
   accessVerifier = fakeAccessVerifier,
   registry = openProfileRegistry(":memory:"),
   everyNight = () => {},
+  backup = recordingBackups().target,
 }: {
   random?: number[];
   addressList?: AddressListTarget;
   accessVerifier?: AccessVerifier;
   registry?: ProfileRegistry;
   everyNight?: (task: () => Promise<unknown>) => void;
+  backup?: BackupTarget;
 } = {}) {
   let now = new Date(CREATED_AT);
   const app = createApp({
@@ -105,6 +144,7 @@ function startAdmin({
     random: scriptedRandom(random),
     now: () => now,
     everyNight,
+    backup,
   });
 
   function request(
@@ -155,6 +195,7 @@ function startAdmin({
     reconcile: () =>
       request("/api/address-list/reconcile", { method: "POST", body: JSON.stringify({}) }),
     addressListStatus: async () => (await request("/api/address-list")).json(),
+    backupStatus: async () => (await request("/api/backup")).json(),
   };
 }
 
@@ -883,6 +924,288 @@ describe("reconciling the address list", () => {
 
     expect(response.status).toBe(400);
     expect(kv.contents()).toMatchObject({ "unknown.owl.11@profile.example": "live" });
+  });
+});
+
+describe("taking Backups", () => {
+  it("takes a Backup on start-up, even when nothing changed", async () => {
+    const backups = recordingBackups();
+
+    startAdmin({ backup: backups.target });
+
+    await vi.waitFor(() => expect(backups.backups).toEqual(["startup"]));
+  });
+
+  it("takes a Backup after a create, once the new Profile has committed", async () => {
+    const listedAtBackup: unknown[] = [];
+    const backups = recordingBackups(async (tag) => {
+      if (tag === "change") listedAtBackup.push(await admin.list());
+    });
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], backup: backups.target });
+
+    await admin.create("Shopping");
+
+    await vi.waitFor(() =>
+      expect(listedAtBackup).toEqual([
+        { profiles: [expect.objectContaining({ label: "Shopping" })] },
+      ]),
+    );
+  });
+  it("takes a Backup after a rename, once the new Label has committed", async () => {
+    const listedAtBackup: unknown[] = [];
+    let changes = 0;
+    const backups = recordingBackups(async (tag) => {
+      if (tag === "change" && ++changes === 2) listedAtBackup.push(await admin.list());
+    });
+    const admin = startAdmin({ backup: backups.target });
+    const { id } = await admin.createProfile("Shopping");
+
+    await admin.rename(id, "Groceries");
+
+    await vi.waitFor(() =>
+      expect(listedAtBackup).toEqual([
+        { profiles: [expect.objectContaining({ label: "Groceries" })] },
+      ]),
+    );
+  });
+
+  it("takes a Backup after a Retire, once the Retire has committed", async () => {
+    const retiredAtBackup: unknown[] = [];
+    let changes = 0;
+    const backups = recordingBackups(async (tag) => {
+      if (tag === "change" && ++changes === 2) retiredAtBackup.push(await admin.listRetired());
+    });
+    const admin = startAdmin({ random: [QUIET, OTTER, 42], backup: backups.target });
+    const { id } = await admin.createProfile("Shopping");
+
+    await admin.retire(id, "quiet.otter.42@profile.example");
+
+    await vi.waitFor(() =>
+      expect(retiredAtBackup).toEqual([
+        { profiles: [expect.objectContaining({ retiredAt: CREATED_AT })] },
+      ]),
+    );
+  });
+
+  it("takes no Backup for a rejected request", async () => {
+    const backups = recordingBackups();
+    const admin = startAdmin({ backup: backups.target });
+    await vi.waitFor(() => expect(backups.backups).toEqual(["startup"]));
+
+    await admin.create("   ");
+    await admin.rename(1, "Groceries");
+    await admin.retire(1, "quiet.otter.42@profile.example");
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(backups.backups).toEqual(["startup"]);
+  });
+  it("folds changes made during a running Backup into one follow-up Backup that holds them all", async () => {
+    let releaseStartup: (() => void) | undefined;
+    let running = 0;
+    let mostAtOnce = 0;
+    const listedAtBackup: unknown[] = [];
+    const backups = recordingBackups(async (tag) => {
+      mostAtOnce = Math.max(mostAtOnce, ++running);
+      if (tag === "startup") await new Promise<void>((resolve) => (releaseStartup = resolve));
+      else listedAtBackup.push(await admin.list());
+      running--;
+    });
+    const admin = startAdmin({
+      random: [QUIET, OTTER, 42, FADED, FOX, 7, QUIET, FOX, 11],
+      backup: backups.target,
+    });
+    await vi.waitFor(() => expect(releaseStartup).toBeDefined());
+
+    await admin.create("Shopping");
+    await admin.create("Travel");
+    await admin.create("Banking");
+    releaseStartup?.();
+
+    await vi.waitFor(() => expect(backups.backups).toEqual(["startup", "change"]));
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(backups.backups).toEqual(["startup", "change"]);
+    expect(listedAtBackup).toEqual([
+      {
+        profiles: [
+          expect.objectContaining({ label: "Banking" }),
+          expect.objectContaining({ label: "Travel" }),
+          expect.objectContaining({ label: "Shopping" }),
+        ],
+      },
+    ]);
+    expect(mostAtOnce).toBe(1);
+  });
+});
+
+describe("a Backup that runs too long", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("is killed after 5 minutes and reported as failed", async () => {
+    vi.useFakeTimers();
+    const killed: unknown[] = [];
+    const backups = recordingBackups(
+      (_tag, signal) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => {
+            killed.push(signal.reason);
+            reject(new Error("restic was killed"));
+          });
+        }),
+    );
+    const admin = startAdmin({ backup: backups.target });
+
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000 - 1);
+    expect(killed).toEqual([]);
+    expect(await admin.backupStatus()).toMatchObject({ backupFailed: false });
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(killed).toHaveLength(1);
+    expect(await admin.backupStatus()).toEqual({
+      backupFailed: true,
+      lastSuccessfulBackupAt: null,
+    });
+  });
+});
+
+describe("the nightly Backup", () => {
+  // Local time, as on the Pi.
+  const OCTOBER_23 = new Date(2026, 9, 23, 3, 0).toISOString();
+  const NOVEMBER_1 = new Date(2026, 10, 1, 3, 0).toISOString();
+
+  async function startNightly() {
+    const nightly: (() => Promise<unknown>)[] = [];
+    const backups = recordingBackups();
+    const admin = startAdmin({ backup: backups.target, everyNight: (task) => nightly.push(task) });
+    await vi.waitFor(() => expect(backups.backups).toEqual(["startup"]));
+    return { admin, backups, runNightly: () => nightly[0]?.() };
+  }
+
+  it("takes a Backup every night, even when nothing changed, then checks the repository", async () => {
+    const { admin, backups, runNightly } = await startNightly();
+    admin.setTime(OCTOBER_23);
+
+    await runNightly();
+
+    expect(backups.backups).toEqual(["startup", "nightly"]);
+    expect(backups.checks).toEqual([{ readDataSubset: false }]);
+  });
+
+  it("reads a sample of the backed-up data in the check on the 1st of the month", async () => {
+    const { admin, backups, runNightly } = await startNightly();
+    admin.setTime(NOVEMBER_1);
+
+    await runNightly();
+
+    expect(backups.checks).toEqual([{ readDataSubset: true }]);
+  });
+
+  it("skips the check when the nightly Backup failed", async () => {
+    const { admin, backups, runNightly } = await startNightly();
+    admin.setTime(OCTOBER_23);
+    backups.fail();
+
+    await runNightly();
+
+    expect(backups.checks).toEqual([]);
+    expect(await admin.backupStatus()).toEqual({
+      backupFailed: true,
+      lastSuccessfulBackupAt: CREATED_AT,
+    });
+  });
+
+  it("reports a failed check with the time of the last successful Backup", async () => {
+    const { admin, backups, runNightly } = await startNightly();
+    admin.setTime(OCTOBER_23);
+    backups.failCheck();
+
+    await runNightly();
+
+    expect(await admin.backupStatus()).toEqual({
+      backupFailed: true,
+      lastSuccessfulBackupAt: OCTOBER_23,
+    });
+  });
+
+  it("clears a failed check on the next successful Backup", async () => {
+    const { admin, backups, runNightly } = await startNightly();
+    admin.setTime(OCTOBER_23);
+    backups.failCheck();
+    await runNightly();
+
+    await admin.create("Shopping");
+
+    await vi.waitFor(async () =>
+      expect(await admin.backupStatus()).toMatchObject({ backupFailed: false }),
+    );
+  });
+});
+
+describe("surfacing a failed Backup", () => {
+  const FAILED_AT = "2026-10-22T10:00:00.000Z";
+  const RECOVERED_AT = "2026-10-22T11:00:00.000Z";
+
+  it("reports the last successful Backup when nothing has gone wrong", async () => {
+    const backups = recordingBackups();
+    const admin = startAdmin({ backup: backups.target });
+
+    await vi.waitFor(async () =>
+      expect(await admin.backupStatus()).toEqual({
+        backupFailed: false,
+        lastSuccessfulBackupAt: CREATED_AT,
+      }),
+    );
+  });
+
+  it("reports the last successful Backup as unknown when none has succeeded since start-up", async () => {
+    const backups = recordingBackups();
+    backups.fail();
+    const admin = startAdmin({ backup: backups.target });
+
+    await vi.waitFor(async () =>
+      expect(await admin.backupStatus()).toEqual({
+        backupFailed: true,
+        lastSuccessfulBackupAt: null,
+      }),
+    );
+  });
+
+  it("keeps the change and reports the time of the last successful Backup when one fails", async () => {
+    const backups = recordingBackups();
+    const admin = startAdmin({ backup: backups.target });
+    await vi.waitFor(() => expect(backups.backups).toEqual(["startup"]));
+    backups.fail();
+    admin.setTime(FAILED_AT);
+
+    const response = await admin.create("Shopping");
+
+    expect(response.status).toBe(201);
+    expect(await admin.list()).toMatchObject({ profiles: [{ label: "Shopping" }] });
+    await vi.waitFor(async () =>
+      expect(await admin.backupStatus()).toEqual({
+        backupFailed: true,
+        lastSuccessfulBackupAt: CREATED_AT,
+      }),
+    );
+  });
+
+  it("clears the failure on the next successful Backup", async () => {
+    const backups = recordingBackups();
+    backups.fail();
+    const admin = startAdmin({ backup: backups.target });
+    await vi.waitFor(async () => expect(await admin.backupStatus()).toMatchObject({ backupFailed: true }));
+    backups.fail(false);
+    admin.setTime(RECOVERED_AT);
+
+    await admin.create("Shopping");
+
+    await vi.waitFor(async () =>
+      expect(await admin.backupStatus()).toEqual({
+        backupFailed: false,
+        lastSuccessfulBackupAt: RECOVERED_AT,
+      }),
+    );
   });
 });
 
