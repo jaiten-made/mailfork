@@ -183,9 +183,9 @@ Cool, low-chroma aluminium greys and black enamel, with one vermilion signal and
 - **Plate Enamel** (`plate`): the numeral plates on every live door. Identical to Black Enamel in light; deeper than it in dark so plates still read against the dark counter and doors.
 
 ### Secondary
-- **Mail Flag Vermilion** (`flag`): the needs-the-Owner signal, and the error text colour off the counter. Error messages; out-of-sync alert border, icon and hatch; the Retire confirm button; the invalid-field ring in the Retire form; the Retire link on hover; the text caret.
+- **Mail Flag Vermilion** (`flag`): the needs-the-Owner signal, and the error text colour off the counter. Error messages; alert border, icon and hatch; the Retire confirm button; the invalid-field ring in the Retire form; the Retire link on hover; the text caret.
 - **Raised Flag** (`flag-bright`): graphics only, never text. The flag cloth on the issued door and the one-minute timer strip under it.
-- **Flag Tint** (`flag-tint`): the background of the out-of-sync alert.
+- **Flag Tint** (`flag-tint`): the background of the alert.
 - **On Flag** (`on-flag`): text on a vermilion button.
 - **Enamel Error** (`on-enamel-error`): error text and invalid ring on the black counter, where the base vermilion would be too dark.
 
@@ -212,7 +212,7 @@ The counter is black enamel in both schemes, so its controls keep light aluminiu
 Dark scheme ("black anodised", `prefers-color-scheme: dark`) remaps the same tokens: wall `#111316`, door `#1e2126`, door-edge `#3a3f47`, field-edge `#6b727c`, door-shine `rgb(255 255 255 / 0.07)`, enamel `#1c1f24`, plate `#08090b`, frame `#2c3037`, field `#24282e`, ink `#e9ecef`, ink-soft `#a5acb6`, flag `#ff7458`, flag-bright `#ff6a4d`, flag-tint `#3a1d17`, on-flag `#1a0b07`, ok `#74d3a1`. On Enamel, Soft On Enamel, Enamel Error and the counter tokens do not change.
 
 ### Named Rules
-**The Mail Flag Rule.** Vermilion means something needs the Owner now: an address in its first minute, an address list out of sync, an irreversible Retire. It is never a brand accent, a primary action colour, or decoration. The Create button is aluminium, not vermilion.
+**The Mail Flag Rule.** Vermilion means something needs the Owner now: an address in its first minute, an address list out of sync, a failed Backup, an irreversible Retire. It is never a brand accent, a primary action colour, or decoration. The Create button is aluminium, not vermilion.
 
 **The Green Means Done Rule.** Green appears only on a finished action (copied). It is never a status badge or a decorative success colour.
 
@@ -289,7 +289,7 @@ Solid, tactile hardware switches.
 ### Cards / Containers
 - **Bank:** one framed panel of doors (see The One-Pixel Seam Rule), 6px radius, Hardware shadow, overflow clipped.
 - **Notice:** aluminium panel with Door Edge border, 12px 16px padding, for after-the-fact facts (post-Retire).
-- **Alert:** Flag Tint panel with vermilion border, a 6px vermilion hatch strip across the top and a 24px flag icon. For an out-of-sync address list only.
+- **Alert:** Flag Tint panel with vermilion border, a 6px vermilion hatch strip across the top and a 24px flag icon. For an out-of-sync address list or a failed Backup only.
 
 ### Navigation
 None. The page is one surface: counter, live bank, retired bank, and a quiet reconcile link at the foot.

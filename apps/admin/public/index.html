@@ -77,6 +77,18 @@
         </div>
       </section>
 
+      <section id="backup-failed" class="alert" hidden aria-labelledby="backup-failed-heading">
+        <svg class="alert-flag" aria-hidden="true"><use href="#i-flag"/></svg>
+        <div class="alert-body">
+          <h2 id="backup-failed-heading">The latest Backup failed.</h2>
+          <p>
+            Changes since then are only on the Pi. The admin app tries again after
+            the next change and tonight at 03:00.
+          </p>
+          <p>Last successful Backup: <span id="backup-failed-last">unknown</span></p>
+        </div>
+      </section>
+
       <section id="retired-notice" class="notice" hidden tabindex="-1" aria-labelledby="retired-notice-heading">
         <h2 id="retired-notice-heading" class="visually-hidden">Profile Retired</h2>
         <p role="status">

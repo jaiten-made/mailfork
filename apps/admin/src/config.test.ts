@@ -14,6 +14,10 @@ const ENV = {
   CLOUDFLARE_ACCOUNT_ID: "account-id",
   KV_NAMESPACE_ID: "namespace-id",
   CLOUDFLARE_API_TOKEN: "api-token-from-env",
+  RESTIC_REPOSITORY: "s3:https://account-id.r2.cloudflarestorage.com/profile-backups",
+  RESTIC_PASSWORD: "restic-password",
+  R2_ACCESS_KEY_ID: "r2-access-key-id",
+  R2_SECRET_ACCESS_KEY: "r2-secret-access-key",
 };
 
 function secretFile(contents: string) {
@@ -32,6 +36,11 @@ describe("reading the admin app's config", () => {
       profileDomain: "profile.example",
       access: { teamDomain: "owner.cloudflareaccess.example", audience: "app-aud-tag" },
       kv: { accountId: "account-id", namespaceId: "namespace-id", apiToken: "api-token-from-env" },
+      backup: {
+        repository: "s3:https://account-id.r2.cloudflarestorage.com/profile-backups",
+        password: "restic-password",
+        r2: { accessKeyId: "r2-access-key-id", secretAccessKey: "r2-secret-access-key" },
+      },
     });
   });
 

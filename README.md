@@ -21,7 +21,7 @@ pnpm check
 
 Follow `docs/provisioning.md` to register the Profile Domain, turn on Email Routing, deploy the Worker and send the first real mail.
 
-`scripts/setup-cloudflare.sh` walks through the same steps, plus the API token, tunnel and Access application from `docs/pi-deployment.md`. It opens each page, runs the `wrangler` commands and saves the non-secret settings to `deploy/admin.env`. Tokens never pass through it.
+`scripts/setup-cloudflare.sh` walks through the same steps, plus the API token, tunnel, Access application and Backup bucket from `docs/pi-deployment.md`. It opens each page, runs the `wrangler` commands and saves the non-secret settings to `deploy/admin.env`. Tokens never pass through it, except the R2 key pair, which it hands straight to `restic init` without saving.
 
 ## Labelling Profile mail in Gmail
 

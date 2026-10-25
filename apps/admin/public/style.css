@@ -793,8 +793,8 @@ svg {
   margin-top: 6px;
 }
 
-/* After a failed push: the flag is up over the whole wall. The hatched
-   strip says it without colour. */
+/* After a failed push, or a failed Backup or check: the flag is up over
+   the whole wall. The hatched strip says it without colour. */
 .alert {
   position: relative;
   display: flex;
@@ -829,6 +829,10 @@ svg {
 
 .alert p {
   max-width: 60ch;
+}
+
+.alert p + p {
+  margin-top: 8px;
 }
 
 .alert .button {
