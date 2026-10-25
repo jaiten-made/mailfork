@@ -69,7 +69,9 @@ The admin app logs `Admin app listening on port 8080`, and `cloudflared` logs re
 
 The Profile database is in the `private-profile_admin-data` volume, at `/data/profiles.db` inside the admin container.
 
-To update: `git pull`, then `docker compose up -d --build`.
+To update, run `scripts/deploy-pi.sh` from your own checkout once a release is on `main`. Over SSH it moves the Pi's checkout to `main` (or a release tag: `scripts/deploy-pi.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the Pi's checkout has local changes. `PI_HOST` and `PI_DIR` override `user@server` and `~/private-profile`.
+
+By hand on the Pi, the same update is `git pull`, then `docker compose up -d --build`.
 
 ## 7. Check the acceptance criteria (issue #8)
 
