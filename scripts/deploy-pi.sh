@@ -29,8 +29,10 @@ fi
 
 echo "Deploying $ref to $host:$dir"
 
-# PI_DIR reaches the Pi as text, and a leading ~ is expanded there.
-ssh "$host" bash -s -- "$ref" "$dir" <<'REMOTE'
+# The Pi reads the whole script before running it: fed line by line on
+# stdin, `docker compose` would swallow the rest and skip the checks. PI_DIR
+# reaches the Pi as text, and a leading ~ is expanded there.
+ssh "$host" 'bash -c "$(cat)" deploy-pi' "$(printf '%q' "$ref")" "$(printf '%q' "$dir")" <<'REMOTE'
 set -euo pipefail
 ref="$1"
 cd "${2/#\~/$HOME}"
@@ -69,8 +71,13 @@ for _ in $(seq 30); do
   [[ "$status" != down ]] && break
   sleep 2
 done
+if [[ "$status" == down ]]; then
+  echo "deploy-pi: the admin app didn't answer within a minute. Recent logs:" >&2
+  docker compose logs --tail 30 admin >&2
+  exit 1
+fi
 if [[ "$status" != 401 ]]; then
-  echo "deploy-pi: expected 401 without an Access JWT, got ${status:-no answer}. Recent logs:" >&2
+  echo "deploy-pi: expected 401 without an Access JWT, got $status. Recent logs:" >&2
   docker compose logs --tail 30 admin >&2
   exit 1
 fi
