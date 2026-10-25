@@ -7,7 +7,9 @@ const SIGNED_OUT = "Your Cloudflare Access sign-in has expired. Reload the page 
 const UNREACHABLE = "Couldn't reach the admin app. Check your connection and try again.";
 const FAILED = "Something went wrong on the admin app. Try again in a moment.";
 
-const dateFormat = new Intl.DateTimeFormat(undefined, {
+// A door's foot shows the date; the time is in its tooltip.
+const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
   timeStyle: "short",
 });
@@ -49,21 +51,30 @@ async function copyAddress(button, address) {
     return;
   }
   const label = button.querySelector(".copy-text");
+  const icon = button.querySelector("use");
   button.dataset.state = "copied";
   label.textContent = "Copied";
+  icon.setAttribute("href", "#i-check");
   clearTimeout(button.copiedTimer);
   button.copiedTimer = setTimeout(() => {
     delete button.dataset.state;
     label.textContent = "Copy";
+    icon.setAttribute("href", "#i-copy");
   }, 2000);
 }
 
-/** Shows an address, letting it wrap only after its `@`. */
+/** Shows an address, letting it wrap only after its `@`, with the Profile Domain set quieter. */
 function setAddress(element, address) {
-  const parts = address.split(/(?<=@)/);
-  element.replaceChildren(
-    ...parts.flatMap((part, index) => (index === 0 ? [part] : [document.createElement("wbr"), part])),
-  );
+  const at = address.lastIndexOf("@") + 1;
+  const domain = document.createElement("span");
+  domain.className = "domain";
+  domain.textContent = address.slice(at);
+  element.replaceChildren(address.slice(0, at), document.createElement("wbr"), domain);
+}
+
+/** The numeral plate on a door: the Profile's id, padded like a box number. */
+function setPlate(element, profile) {
+  element.textContent = String(profile.id).padStart(3, "0");
 }
 
 function wireCopy(button, address) {
@@ -74,27 +85,29 @@ function wireCopy(button, address) {
 function setTime(element, prefix, iso) {
   element.dateTime = iso;
   element.textContent = `${prefix} ${dateFormat.format(new Date(iso))}`;
+  element.title = dateTimeFormat.format(new Date(iso));
 }
 
-function renderTicket(profile) {
-  const ticket = $("ticket-template").content.firstElementChild.cloneNode(true);
-  const label = ticket.querySelector(".ticket-label");
-  const actions = ticket.querySelector(".ticket-actions");
-  const renameButton = ticket.querySelector(".rename");
-  const form = ticket.querySelector(".rename-form");
+function renderDoor(profile) {
+  const door = $("door-template").content.firstElementChild.cloneNode(true);
+  const label = door.querySelector(".door-label");
+  const actions = door.querySelector(".door-actions");
+  const renameButton = door.querySelector(".rename");
+  const form = door.querySelector(".rename-form");
   const input = form.querySelector("input");
   const error = form.querySelector(".error");
   const inputId = `rename-${profile.id}`;
-  const retireButton = ticket.querySelector(".retire");
-  const retireForm = ticket.querySelector(".retire-form");
+  const retireButton = door.querySelector(".retire");
+  const retireForm = door.querySelector(".retire-form");
   const retireInput = retireForm.querySelector("input");
   const retireError = retireForm.querySelector(".error");
   const retireInputId = `retire-${profile.id}`;
 
   label.textContent = profile.label;
-  setTime(ticket.querySelector(".created"), "Created", profile.createdAt);
-  setAddress(ticket.querySelector(".address"), profile.profileAddress);
-  wireCopy(ticket.querySelector(".copy"), profile.profileAddress);
+  setPlate(door.querySelector(".plate"), profile);
+  setTime(door.querySelector(".created"), "Created", profile.createdAt);
+  setAddress(door.querySelector(".address"), profile.profileAddress);
+  wireCopy(door.querySelector(".copy"), profile.profileAddress);
 
   input.id = inputId;
   form.querySelector("label").htmlFor = inputId;
@@ -189,16 +202,17 @@ function renderTicket(profile) {
     }
   };
 
-  return ticket;
+  return door;
 }
 
-function renderRetiredTicket(profile) {
-  const ticket = $("retired-template").content.firstElementChild.cloneNode(true);
-  ticket.querySelector(".ticket-label").textContent = profile.label;
-  setTime(ticket.querySelector(".created"), "Created", profile.createdAt);
-  setTime(ticket.querySelector(".retired-at"), "Retired", profile.retiredAt);
-  setAddress(ticket.querySelector(".address"), profile.profileAddress);
-  return ticket;
+function renderSealedDoor(profile) {
+  const door = $("retired-template").content.firstElementChild.cloneNode(true);
+  door.querySelector(".door-label").textContent = profile.label;
+  setPlate(door.querySelector(".plate"), profile);
+  setTime(door.querySelector(".created"), "Created", profile.createdAt);
+  setTime(door.querySelector(".retired-at"), "Retired", profile.retiredAt);
+  setAddress(door.querySelector(".address"), profile.profileAddress);
+  return door;
 }
 
 async function loadLive() {
@@ -206,7 +220,9 @@ async function loadLive() {
   list.setAttribute("aria-busy", "true");
   try {
     const { profiles } = await api("/api/profiles");
-    list.replaceChildren(...profiles.map(renderTicket));
+    // The issued door already heads the wall, so it isn't hung twice.
+    const issuedId = $("issued").hidden ? null : issuedProfileId;
+    list.replaceChildren(...profiles.filter(({ id }) => id !== issuedId).map(renderDoor));
     $("live-count").textContent = profiles.length ? `(${profiles.length})` : "";
     $("empty").hidden = profiles.length > 0;
     showError($("list-error"), "");
@@ -222,7 +238,7 @@ async function loadRetired() {
   const section = $("retired-section");
   try {
     const { profiles } = await api("/api/profiles/retired");
-    $("retired").replaceChildren(...profiles.map(renderRetiredTicket));
+    $("retired").replaceChildren(...profiles.map(renderSealedDoor));
     $("retired-count").textContent = `(${profiles.length})`;
     section.hidden = profiles.length === 0;
     showError($("retired-error"), "");
@@ -271,12 +287,30 @@ $("push-failed-retry").onclick = async () => {
 
 $("reconcile").onclick = () => reconcile($("reconcile"), $("push-failed-error"));
 
+// Workers KV takes up to about a minute to pick up a new address, so the
+// new door's flag stays up that long.
+const FLAG_UP_MS = 60_000;
+const FLAG_UP_TEXT = $("issued-flag-text").textContent;
+const FLAG_DOWN_TEXT = "A minute has passed, so this address should be working now.";
+let flagTimer;
+let issuedProfileId = null;
+
 function showIssued(profile) {
   const issued = $("issued");
+  const door = issued.querySelector(".door-issued");
+  issuedProfileId = profile.id;
   $("issued-label").textContent = profile.label;
+  setPlate($("issued-plate"), profile);
   setAddress($("issued-address"), profile.profileAddress);
   wireCopy($("issued-copy"), profile.profileAddress);
-  // Re-showing restarts the issue animation for each new ticket.
+  door.dataset.flag = "up";
+  $("issued-flag-text").textContent = FLAG_UP_TEXT;
+  clearTimeout(flagTimer);
+  flagTimer = setTimeout(() => {
+    door.dataset.flag = "down";
+    $("issued-flag-text").textContent = FLAG_DOWN_TEXT;
+  }, FLAG_UP_MS);
+  // Re-showing restarts the install animation for each new door.
   issued.hidden = true;
   void issued.offsetWidth;
   issued.hidden = false;
@@ -285,10 +319,10 @@ function showIssued(profile) {
 function showRetired(profile) {
   const notice = $("retired-notice");
   setAddress($("retired-notice-address"), profile.profileAddress);
-  // The just-issued ticket must not keep offering a Retired Address to copy.
+  // The just-issued door must not keep offering a Retired Address to copy.
   if ($("issued-address").textContent === profile.profileAddress) $("issued").hidden = true;
   notice.hidden = false;
-  // Its ticket is about to go, so focus moves to the notice.
+  // Its door is about to go, so focus moves to the notice.
   notice.focus();
 }
 

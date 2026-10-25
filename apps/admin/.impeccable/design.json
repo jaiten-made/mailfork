@@ -1,0 +1,682 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T00:00:00Z",
+  "title": "Design System: Private Profile admin",
+  "extensions": {
+    "colorMeta": {
+      "wall": {
+        "role": "neutral",
+        "displayName": "Anodised Wall",
+        "cssVar": "--wall",
+        "canonical": "oklch(83.7% 0.010 253)",
+        "tonalRamp": [
+          "#080b0f",
+          "#212429",
+          "#3c4045",
+          "#5a5e63",
+          "#797e83",
+          "#9a9fa5",
+          "#bcc1c7",
+          "#eaeff5"
+        ],
+        "dark": "#111316"
+      },
+      "door": {
+        "role": "neutral",
+        "displayName": "Aluminium Door",
+        "cssVar": "--door",
+        "canonical": "oklch(93.6% 0.005 248)",
+        "tonalRamp": [
+          "#090b0d",
+          "#222426",
+          "#3e4042",
+          "#5b5e60",
+          "#7b7e80",
+          "#9c9fa1",
+          "#bec1c4",
+          "#eceff2"
+        ],
+        "dark": "#1e2126"
+      },
+      "door-edge": {
+        "role": "neutral",
+        "displayName": "Door Edge",
+        "cssVar": "--door-edge",
+        "canonical": "oklch(69.3% 0.015 255)",
+        "tonalRamp": [
+          "#070b12",
+          "#1f252c",
+          "#3a4048",
+          "#585e66",
+          "#777e87",
+          "#989fa8",
+          "#bac2cb",
+          "#e8eff9"
+        ],
+        "dark": "#3a3f47"
+      },
+      "door-shine": {
+        "role": "neutral",
+        "displayName": "Door Shine",
+        "cssVar": "--door-shine",
+        "canonical": "rgb(255 255 255 / 0.75)",
+        "dark": "rgb(255 255 255 / 0.07)"
+      },
+      "frame": {
+        "role": "neutral",
+        "displayName": "Frame",
+        "cssVar": "--frame",
+        "canonical": "oklch(75.4% 0.014 252)",
+        "tonalRamp": [
+          "#070c11",
+          "#1f252b",
+          "#3a4047",
+          "#585e65",
+          "#777e86",
+          "#989fa7",
+          "#bbc2ca",
+          "#e8eff8"
+        ],
+        "dark": "#2c3037"
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Field",
+        "cssVar": "--field",
+        "canonical": "oklch(97.0% 0.003 265)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#232425",
+          "#3f4041",
+          "#5d5e5f",
+          "#7c7d7f",
+          "#9d9ea0",
+          "#c0c1c3",
+          "#edeef0"
+        ],
+        "dark": "#24282e"
+      },
+      "field-edge": {
+        "role": "neutral",
+        "displayName": "Field Edge",
+        "cssVar": "--field-edge",
+        "canonical": "oklch(57.7% 0.018 257)",
+        "tonalRamp": [
+          "#070b13",
+          "#1f242d",
+          "#3a4049",
+          "#575e68",
+          "#777e88",
+          "#989faa",
+          "#bac2cc",
+          "#e7effb"
+        ],
+        "dark": "#6b727c"
+      },
+      "counter-field": {
+        "role": "counter",
+        "displayName": "Counter Field",
+        "cssVar": "--counter-field",
+        "canonical": "oklch(97.0% 0.003 265)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#232425",
+          "#3f4041",
+          "#5d5e5f",
+          "#7c7d7f",
+          "#9d9ea0",
+          "#c0c1c3",
+          "#edeef0"
+        ]
+      },
+      "counter-ink": {
+        "role": "counter",
+        "displayName": "Counter Ink",
+        "cssVar": "--counter-ink",
+        "canonical": "oklch(20.4% 0.009 264)",
+        "tonalRamp": [
+          "#090b0f",
+          "#222428",
+          "#3d4044",
+          "#5b5e63",
+          "#7b7d82",
+          "#9c9ea4",
+          "#bec1c7",
+          "#eceef4"
+        ]
+      },
+      "counter-placeholder": {
+        "role": "counter",
+        "displayName": "Counter Placeholder",
+        "cssVar": "--counter-placeholder",
+        "canonical": "oklch(49.7% 0.018 257)",
+        "tonalRamp": [
+          "#070b13",
+          "#1e242d",
+          "#3a404a",
+          "#575e68",
+          "#777e88",
+          "#979faa",
+          "#bac2cd",
+          "#e7effb"
+        ]
+      },
+      "counter-caret": {
+        "role": "counter",
+        "displayName": "Counter Caret",
+        "cssVar": "--counter-caret",
+        "canonical": "oklch(44.4% 0.154 32)",
+        "tonalRamp": [
+          "#350000",
+          "#590000",
+          "#7d0000",
+          "#a2301e",
+          "#c8533f",
+          "#ee7560",
+          "#ff9881",
+          "#ffc6ad"
+        ]
+      },
+      "counter-button": {
+        "role": "counter",
+        "displayName": "Counter Button",
+        "cssVar": "--counter-button",
+        "canonical": "oklch(83.7% 0.010 253)",
+        "tonalRamp": [
+          "#080b0f",
+          "#212429",
+          "#3c4045",
+          "#5a5e63",
+          "#797e83",
+          "#9a9fa5",
+          "#bcc1c7",
+          "#eaeff5"
+        ]
+      },
+      "counter-button-hover": {
+        "role": "counter",
+        "displayName": "Counter Button Hover",
+        "cssVar": "--counter-button-hover",
+        "canonical": "oklch(90.8% 0.007 248)",
+        "tonalRamp": [
+          "#090b0e",
+          "#212427",
+          "#3d4043",
+          "#5b5e61",
+          "#7a7e81",
+          "#9b9fa3",
+          "#bdc1c5",
+          "#ebeff3"
+        ]
+      },
+      "counter-seam": {
+        "role": "counter",
+        "displayName": "Counter Seam",
+        "cssVar": "--counter-seam",
+        "canonical": "oklch(0.0% 0.000 0)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#7d7d7d",
+          "#9e9e9e",
+          "#c1c1c1",
+          "#eeeeee"
+        ]
+      },
+      "enamel": {
+        "role": "primary",
+        "displayName": "Black Enamel",
+        "cssVar": "--enamel",
+        "canonical": "oklch(20.9% 0.009 264)",
+        "tonalRamp": [
+          "#090b0f",
+          "#222428",
+          "#3d4044",
+          "#5b5e63",
+          "#7b7d82",
+          "#9c9ea4",
+          "#bec1c7",
+          "#eceef4"
+        ],
+        "dark": "#1c1f24"
+      },
+      "plate": {
+        "role": "primary",
+        "displayName": "Plate Enamel",
+        "cssVar": "--plate",
+        "canonical": "oklch(20.9% 0.009 264)",
+        "tonalRamp": [
+          "#090b0f",
+          "#222428",
+          "#3d4044",
+          "#5b5e63",
+          "#7b7d82",
+          "#9c9ea4",
+          "#bec1c7",
+          "#eceef4"
+        ],
+        "dark": "#08090b"
+      },
+      "on-enamel": {
+        "role": "neutral",
+        "displayName": "On Enamel",
+        "cssVar": "--on-enamel",
+        "canonical": "oklch(95.4% 0.003 248)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232426",
+          "#3e4041",
+          "#5c5e5f",
+          "#7c7d7f",
+          "#9d9fa0",
+          "#bfc1c3",
+          "#edeff1"
+        ]
+      },
+      "on-enamel-soft": {
+        "role": "neutral",
+        "displayName": "Soft On Enamel",
+        "cssVar": "--on-enamel-soft",
+        "canonical": "oklch(75.8% 0.015 255)",
+        "tonalRamp": [
+          "#070b11",
+          "#1f242b",
+          "#3a4048",
+          "#585e66",
+          "#777e86",
+          "#989fa8",
+          "#bac2cb",
+          "#e8eff9"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "cssVar": "--ink",
+        "canonical": "oklch(20.4% 0.009 264)",
+        "tonalRamp": [
+          "#090b0f",
+          "#222428",
+          "#3d4044",
+          "#5b5e63",
+          "#7b7d82",
+          "#9c9ea4",
+          "#bec1c7",
+          "#eceef4"
+        ],
+        "dark": "#e9ecef"
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "cssVar": "--ink-soft",
+        "canonical": "oklch(41.4% 0.017 258)",
+        "tonalRamp": [
+          "#070b12",
+          "#1f242c",
+          "#3a4049",
+          "#585e67",
+          "#777e88",
+          "#989fa9",
+          "#bac1cc",
+          "#e8effa"
+        ],
+        "dark": "#a5acb6"
+      },
+      "flag": {
+        "role": "secondary",
+        "displayName": "Mail Flag Vermilion",
+        "cssVar": "--flag",
+        "canonical": "oklch(44.4% 0.154 32)",
+        "tonalRamp": [
+          "#350000",
+          "#590000",
+          "#7d0000",
+          "#a2301e",
+          "#c8533f",
+          "#ee7560",
+          "#ff9881",
+          "#ffc6ad"
+        ],
+        "dark": "#ff7458"
+      },
+      "flag-bright": {
+        "role": "secondary",
+        "displayName": "Raised Flag",
+        "cssVar": "--flag-bright",
+        "canonical": "oklch(61.3% 0.198 32)",
+        "tonalRamp": [
+          "#3f0000",
+          "#650000",
+          "#7f0000",
+          "#a52c17",
+          "#ca503a",
+          "#f1735c",
+          "#ff967d",
+          "#ffc4a9"
+        ],
+        "dark": "#ff6a4d"
+      },
+      "flag-tint": {
+        "role": "secondary",
+        "displayName": "Flag Tint",
+        "cssVar": "--flag-tint",
+        "canonical": "oklch(91.6% 0.029 36)",
+        "tonalRamp": [
+          "#160704",
+          "#311f1a",
+          "#4e3a35",
+          "#6d5852",
+          "#8e7871",
+          "#b09892",
+          "#d3bbb4",
+          "#ffe8e1"
+        ],
+        "dark": "#3a1d17"
+      },
+      "on-flag": {
+        "role": "secondary",
+        "displayName": "On Flag",
+        "cssVar": "--on-flag",
+        "canonical": "oklch(98.2% 0.009 34)",
+        "tonalRamp": [
+          "#0f0a09",
+          "#282321",
+          "#443e3d",
+          "#635c5a",
+          "#827b7a",
+          "#a49c9b",
+          "#c7bfbd",
+          "#f4ecea"
+        ],
+        "dark": "#1a0b07"
+      },
+      "on-enamel-error": {
+        "role": "secondary",
+        "displayName": "Enamel Error",
+        "cssVar": "--on-enamel-error",
+        "canonical": "oklch(76.6% 0.140 33)",
+        "tonalRamp": [
+          "#320000",
+          "#550000",
+          "#791000",
+          "#9d3724",
+          "#c25844",
+          "#e87a64",
+          "#ff9d86",
+          "#ffcbb2"
+        ]
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Done Green",
+        "cssVar": "--ok",
+        "canonical": "oklch(46.3% 0.084 159)",
+        "tonalRamp": [
+          "#001400",
+          "#002f13",
+          "#034d2f",
+          "#2c6c4c",
+          "#4e8d6b",
+          "#6faf8b",
+          "#91d2ad",
+          "#beffda"
+        ],
+        "dark": "#74d3a1"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The just-issued address at reading-out size. One per page."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The Label field's label on the counter, the page's visible heading."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Bank headings, count in Soft Ink at 500."
+      },
+      "plate": {
+        "displayName": "Plate",
+        "purpose": "Three-digit zero-padded box number on enamel."
+      },
+      "address": {
+        "displayName": "Address",
+        "purpose": "A door's Profile Address; domain half in Soft Ink."
+      },
+      "door-label": {
+        "displayName": "Door Label",
+        "purpose": "The Profile's Label beside the plate; 1.25rem on the issued door."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Notices, warnings, hints; 60ch max."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Dates, quiet actions, reconcile status."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Only the Retire confirmation field."
+      }
+    },
+    "shadows": [
+      {
+        "name": "hardware",
+        "value": "0 1px 1px rgb(21 23 27 / 0.14), 0 2px 4px -1px rgb(21 23 27 / 0.18)",
+        "dark": "0 1px 1px rgb(0 0 0 / 0.5), 0 2px 4px -1px rgb(0 0 0 / 0.6)",
+        "purpose": "Framed bank, standalone door, issued door."
+      },
+      {
+        "name": "top-shine",
+        "value": "inset 0 1px 0 var(--door-shine)",
+        "purpose": "Metal edge highlight on every door and default button."
+      },
+      {
+        "name": "seam",
+        "value": "1px 1px 0 var(--frame)",
+        "purpose": "Right and bottom seam each door draws inside a bank."
+      },
+      {
+        "name": "slot-recess",
+        "value": "inset 0 1px 2px rgb(0 0 0 / 0.6), 0 1px 0 var(--door-shine)",
+        "purpose": "The letter slot."
+      },
+      {
+        "name": "counter-ledge",
+        "value": "0 1px 0 var(--door-shine), 0 2px 6px -2px rgb(0 0 0 / 0.4)",
+        "purpose": "Lip under the enamel counter."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All state movement."
+      },
+      {
+        "name": "install",
+        "value": "420ms",
+        "purpose": "Issued door slides 16px out from under the counter while unclipping."
+      },
+      {
+        "name": "raise",
+        "value": "360ms, 300ms delay",
+        "purpose": "Flag rotates up from 90deg after the door lands."
+      },
+      {
+        "name": "lower",
+        "value": "500ms",
+        "purpose": "Flag transition down to Door Edge grey."
+      },
+      {
+        "name": "minute",
+        "value": "60s linear",
+        "purpose": "Timer strip scales to zero along the issued door's bottom edge."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: no-preference",
+        "purpose": "Every animation and transition is gated behind it."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "560px",
+        "purpose": "24px gutters; issued Copy moves beside the address."
+      },
+      {
+        "name": "md",
+        "value": "760px",
+        "purpose": "Bank becomes a grid of minmax(26rem, 1fr)."
+      }
+    ],
+    "layout": {
+      "container": "calc(72rem + 48px)",
+      "counterForm": "36rem",
+      "measure": "60ch",
+      "minTarget": "44px"
+    },
+    "stateMarks": [
+      {
+        "name": "hatch",
+        "value": "repeating-linear-gradient(-45deg, <color> 0 Npx, transparent Npx 2Npx)",
+        "purpose": "Non-colour mark: alert top strip (flag, 4px) and sealed slot (door-edge, 2px in 5px)."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Aluminium hardware button: Cancel, Copy.",
+      "html": "<button class=\"ds-btn\"><svg viewBox=\"0 0 20 20\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"6.5\" y=\"6.5\" width=\"10\" height=\"11\" rx=\"1.5\"/><path d=\"M13.5 6.5V4a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 4v9A1.5 1.5 0 0 0 5 14.5h1.5\"/></svg>Copy</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid var(--field-edge, #737a84); border-radius: 6px; background: var(--door, #e7eaed); color: var(--ink, #15171b); box-shadow: inset 0 1px 0 var(--door-shine, rgb(255 255 255 / 0.75)); font: 600 1rem/1.5 system-ui, sans-serif; cursor: pointer; } .ds-btn:hover { border-color: var(--ink-soft, #464c55); } .ds-btn:focus-visible { outline: 2px solid var(--ink, #15171b); outline-offset: 2px; } .ds-btn[data-state=copied] { border-color: var(--ok, #276747); color: var(--ok, #276747); }"
+    },
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Black enamel commit button (Save).",
+      "html": "<button class=\"ds-btn-ink\">Save</button>",
+      "css": ".ds-btn-ink { min-height: 44px; padding: 0 16px; border: 1px solid var(--enamel, #16181c); border-radius: 6px; background: var(--enamel, #16181c); color: var(--on-enamel, #eef0f2); font: 600 1rem/1.5 system-ui, sans-serif; cursor: pointer; } .ds-btn-ink:hover { background: color-mix(in srgb, var(--enamel, #16181c) 85%, var(--door, #e7eaed)); } .ds-btn-ink:focus-visible { outline: 2px solid var(--ink, #15171b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Flag Button",
+      "kind": "button",
+      "refersTo": "button-flag",
+      "description": "Vermilion confirm, only for the irreversible Retire.",
+      "html": "<button class=\"ds-btn-flag\">Retire</button>",
+      "css": ".ds-btn-flag { min-height: 44px; padding: 0 16px; border: 1px solid var(--flag, #962311); border-radius: 6px; background: var(--flag, #962311); color: var(--on-flag, #fff7f5); font: 600 1rem/1.5 system-ui, sans-serif; cursor: pointer; } .ds-btn-flag:hover { background: color-mix(in srgb, var(--flag, #962311) 85%, var(--enamel, #16181c)); } .ds-btn-flag:focus-visible { outline: 2px solid var(--ink, #15171b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Quiet Action",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Underlined text action: Rename, Retire, reconcile.",
+      "html": "<button class=\"ds-quiet\">Rename</button> <button class=\"ds-quiet ds-quiet-retire\">Retire</button>",
+      "css": ".ds-quiet { min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--ink-soft, #464c55); font: 400 0.875rem/1.5 system-ui, sans-serif; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: pointer; } .ds-quiet:hover { color: var(--ink, #15171b); } .ds-quiet-retire:hover { color: var(--flag, #962311); } .ds-quiet:focus-visible { outline: 2px solid var(--ink, #15171b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Text field inside doors and the alert.",
+      "html": "<input class=\"ds-field\" placeholder=\"New Label\">",
+      "css": ".ds-field { min-height: 44px; padding: 0 12px; border: 1px solid var(--field-edge, #737a84); border-radius: 6px; background: var(--field, #f4f5f7); color: var(--ink, #15171b); font: 400 1rem/1.5 system-ui, sans-serif; } .ds-field:focus-visible { outline: 2px solid var(--ink, #15171b); outline-offset: 2px; } .ds-field[aria-invalid=true] { border-color: var(--flag, #962311); box-shadow: 0 0 0 1px var(--flag, #962311); }"
+    },
+    {
+      "name": "Counter",
+      "kind": "custom",
+      "refersTo": "counter",
+      "description": "Black enamel header where boxes are issued: Label field and Create at thumb height.",
+      "html": "<form class=\"ds-counter\"><label class=\"ds-counter-label\" for=\"ds-l\">Label for a new Profile</label><div class=\"ds-counter-row\"><input id=\"ds-l\" class=\"ds-counter-field\" placeholder=\"Such as Shopping\"><button class=\"ds-counter-submit\">Create</button></div></form>",
+      "css": ".ds-counter { background: var(--enamel, #16181c); color: var(--on-enamel, #eef0f2); padding: 20px 16px 22px; border-bottom: 1px solid var(--counter-seam, #000); } .ds-counter-label { display: block; margin-bottom: 10px; font: 650 1.5rem/1.5 'Barlow Semi Condensed', system-ui, sans-serif; } .ds-counter-row { display: flex; gap: 8px; max-width: 36rem; } .ds-counter-field { flex: 1; min-width: 0; min-height: 52px; padding: 0 14px; border: 1px solid transparent; border-radius: 6px; background: var(--counter-field, #f4f5f7); color: var(--counter-ink, #15171b); caret-color: var(--counter-caret, #962311); font: 400 1.0625rem system-ui, sans-serif; } .ds-counter-field::placeholder { color: var(--counter-placeholder, #5c636d); } .ds-counter-submit { min-height: 52px; padding: 0 22px; border: 1px solid var(--counter-field, #f4f5f7); border-radius: 6px; background: var(--counter-button, #c5cad0); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7); color: var(--counter-ink, #15171b); font: 700 1.0625rem system-ui, sans-serif; cursor: pointer; } .ds-counter-submit:hover { background: var(--counter-button-hover, #dde1e5); } .ds-counter :focus-visible { outline: 2px solid var(--on-enamel, #eef0f2); outline-offset: 2px; }"
+    },
+    {
+      "name": "Door",
+      "kind": "card",
+      "refersTo": "door",
+      "description": "One Profile: plate, Label, slot, engraved address, Copy, date and quiet actions.",
+      "html": "<div class=\"ds-door\"><div class=\"ds-door-head\"><span class=\"ds-plate\">011</span><span class=\"ds-door-label\">Library</span></div><span class=\"ds-address\">amber.marble.67<span class=\"ds-domain\">@profile.example</span></span><button class=\"ds-door-copy\">Copy</button><div class=\"ds-door-foot\"><span>Created Jun 18, 2026</span><span><u>Rename</u> <u>Retire</u></span></div></div>",
+      "css": ".ds-door { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 12px 14px 2px; border: 1px solid var(--door-edge, #969da6); border-radius: 6px; background: var(--door, #e7eaed); color: var(--ink, #15171b); box-shadow: inset 0 1px 0 var(--door-shine, rgb(255 255 255 / 0.75)), 0 1px 1px rgb(21 23 27 / 0.14), 0 2px 4px -1px rgb(21 23 27 / 0.18); font: 400 1rem/1.5 system-ui, sans-serif; font-variant-numeric: tabular-nums; } .ds-door-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px 10px; margin-bottom: 8px; } .ds-door-head::after { content: ''; order: 3; width: 30px; height: 5px; margin-left: auto; border-radius: 3px; background: var(--enamel, #16181c); box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.6), 0 1px 0 var(--door-shine, rgb(255 255 255 / 0.75)); } .ds-plate { min-width: 3.5rem; padding: 2px 9px; border-radius: 3px; background: var(--plate, #16181c); color: var(--on-enamel, #eef0f2); font: 800 1.25rem/1.2 'Barlow Semi Condensed', system-ui, sans-serif; letter-spacing: 0.05em; text-align: center; } .ds-door-label { font: 650 1.125rem 'Barlow Semi Condensed', system-ui, sans-serif; } .ds-address { font: 600 1.1875rem/1.3 'Barlow Semi Condensed', system-ui, sans-serif; overflow-wrap: break-word; } .ds-domain { color: var(--ink-soft, #464c55); } .ds-door-copy { min-height: 44px; padding: 0 14px; border: 1px solid var(--field-edge, #737a84); border-radius: 6px; background: var(--door, #e7eaed); box-shadow: inset 0 1px 0 var(--door-shine, rgb(255 255 255 / 0.75)); font: 600 1rem system-ui, sans-serif; } .ds-door-copy:hover { border-color: var(--ink-soft, #464c55); } .ds-door-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; padding: 2px 0 12px; border-top: 1px solid color-mix(in srgb, var(--door-edge, #969da6) 50%, transparent); color: var(--ink-soft, #464c55); font-size: 0.875rem; }"
+    },
+    {
+      "name": "Alert",
+      "kind": "custom",
+      "refersTo": "alert",
+      "description": "Out-of-sync address list: the flag is up over the whole wall.",
+      "html": "<div class=\"ds-alert\"><svg viewBox=\"0 0 20 20\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 18V2.5\"/><path d=\"M5 3h10l-2.5 3.5L15 10H5z\" fill=\"currentColor\"/></svg><div><strong>The address list is out of sync</strong><p>Push it to Cloudflare again.</p></div></div>",
+      "css": ".ds-alert { position: relative; display: flex; gap: 12px; padding: 20px 16px 16px; border: 1px solid var(--flag, #962311); border-radius: 6px; background: var(--flag-tint, #f6ddd6); color: var(--ink, #15171b); overflow: hidden; font: 400 1rem/1.5 system-ui, sans-serif; } .ds-alert::before { content: ''; position: absolute; inset: 0 0 auto; height: 6px; background: repeating-linear-gradient(-45deg, var(--flag, #962311) 0 4px, transparent 4px 8px); } .ds-alert svg { flex: none; color: var(--flag, #962311); } .ds-alert p { margin: 4px 0 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Private Bag Wall",
+    "overview": "The admin page is a bank of private boxes on the Owner's own premises. The ground is anodised aluminium; a black enamel counter runs across the top where boxes are issued; below it the wall of doors, each an aluminium panel with a one-pixel edge, a bright top highlight, a black enamel numeral plate, a letter slot, and the Profile Address engraved large in a condensed industrial face. It is hardware, not a dashboard: the doors share seams inside one framed bank rather than floating as separate cards.\n\nDensity is high but legible: one door holds number, Label, address, Copy, date and two quiet actions, so state reads at a glance on a phone held in one hand. Colour is almost entirely neutral metal. Vermilion is the mail flag and only appears when something needs the Owner. Green appears only when something is done. At night the wall turns black anodised (dark scheme), with the same structure and the flag brightened.\n\nThe system refuses the neutral SaaS card list and the hacker terminal.",
+    "keyCharacteristics": [
+      "Aluminium ground, black enamel counter and numeral plates, aluminium doors.",
+      "Doors packed into one framed bank with one-pixel seams, stacked on a phone, a grid on desktop.",
+      "Barlow Semi Condensed for the engraved parts (numerals, addresses, Labels, headings); system sans for everything read as prose.",
+      "Vermilion as a raised mail flag, never as decoration.",
+      "Retired doors are sealed: dashed, struck through, hatched slot, never hidden."
+    ],
+    "rules": [
+      {
+        "name": "The Mail Flag Rule",
+        "body": "Vermilion means something needs the Owner now: an address in its first minute, an address list out of sync, an irreversible Retire. It is never a brand accent, a primary action colour, or decoration. The Create button is aluminium, not vermilion.",
+        "section": "colors"
+      },
+      {
+        "name": "The Green Means Done Rule",
+        "body": "Green appears only on a finished action (copied). It is never a status badge or a decorative success colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Engraved Parts Rule",
+        "body": "Barlow Semi Condensed is for what would be engraved or enamelled on the box: numerals, addresses, Labels, bank headings. Sentences, buttons and hints stay in the system sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Read It Out Rule",
+        "body": "The domain half of an address is set quieter (Soft Ink) for scanning, except where the whole address must be typed or read out (Retire confirmation, the post-Retire notice), where it takes full ink.",
+        "section": "typography"
+      },
+      {
+        "name": "The One-Pixel Seam Rule",
+        "body": "Doors inside a bank touch. No gaps, no individual radii, no individual drop shadows: the bank owns the frame, radius and Hardware shadow, and the seams between doors are one pixel of Frame.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Sealed Is Flat Rule",
+        "body": "Retired surfaces lose all shadow and shine: dashed edge, wall-coloured fill.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do border buttons and fields with Field Edge and doors with Door Edge.",
+      "Do pack doors into one framed bank with one-pixel Frame seams; give the bank, not the door, the radius and Hardware shadow.",
+      "Do put a numeral plate (zero-padded to three digits) and a letter slot on every door.",
+      "Do raise vermilion only when the Owner must act or wait, and pair it with a non-colour mark (flag shape, hatch, text).",
+      "Do keep every interactive target at least 44px tall and Copy within thumb reach.",
+      "Do gate every movement behind `prefers-reduced-motion: no-preference`, using the 0.16, 1, 0.3, 1 ease-out.",
+      "Do define both schemes through the same custom properties; build new surfaces on `var(--token)`, not literals. Hex values live only in `:root`."
+    ],
+    "donts": [
+      "Don't use vermilion for primary actions, headings, or decoration.",
+      "Don't set text in Raised Flag; it is for the flag cloth and timer only. Error text uses Mail Flag Vermilion.",
+      "Don't use green for anything but a finished action.",
+      "Don't separate doors into floating cards with gaps and their own shadows; that is the neutral SaaS card list this world refuses.",
+      "Don't reach for terminal styling (green on black, monospace addresses); mono is only for typing an address back.",
+      "Don't set prose, buttons or hints in Barlow Semi Condensed.",
+      "Don't hide Retired Profiles; seal them.",
+      "Don't add large blurred ambient shadows or glassy translucency; depth is a metal edge and a short drop."
+    ]
+  }
+}
