@@ -2,7 +2,7 @@
 
 How the Owner sets up the Profile Domain on Cloudflare and checks that real mail flows (issue #3). It needs a Cloudflare account, a card to buy the domain, and one outside mail account that is not the Personal Inbox. Do the steps in order: each one depends on the one before.
 
-`scripts/setup-cloudflare.sh` walks through these steps interactively and continues into the Cloudflare part of `docs/pi-deployment.md`.
+`scripts/setup-cloudflare.sh` walks through these steps interactively and continues into the Cloudflare part of `docs/deployment.md`.
 
 Cloudflare moves its dashboard menus around. If a menu named here has moved, the linked Cloudflare docs have the current path.
 

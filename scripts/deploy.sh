@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Deploys a release to the server: checks out `main` (or a release tag) in
 # the server's checkout, rebuilds the admin image with Compose and checks the
-# admin app came back. docs/pi-deployment.md sets up a Raspberry Pi as one.
+# admin app came back. docs/deployment.md sets one up.
 #
 #   DEPLOY_HOST=user@server scripts/deploy.sh              # latest main
 #   DEPLOY_HOST=user@server scripts/deploy.sh 2026.10.2    # a release tag
@@ -69,7 +69,7 @@ missing=$(docker compose config |
   awk '/^secrets:/ { s = 1; next } /^[^ ]/ { s = 0 } s && $1 == "file:" { print $2 }' |
   while read -r file; do [[ -f "$file" ]] || echo "$file"; done)
 if [[ -n "$missing" ]]; then
-  echo "deploy: these secret files are missing on the server (docs/pi-deployment.md):" >&2
+  echo "deploy: these secret files are missing on the server (docs/deployment.md):" >&2
   echo "$missing" >&2
   echo "The containers are untouched. Add the files, then deploy again." >&2
   exit 1

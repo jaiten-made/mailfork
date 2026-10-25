@@ -1,6 +1,6 @@
-# Running the admin app on the Pi
+# Running the admin app on a home server
 
-The admin app runs on the Raspberry Pi 4 in Docker Compose next to `cloudflared` (ADR 0002). `compose.yaml` at the repo root defines both. No ports are published: `cloudflared` dials out to Cloudflare, and the admin app is reachable only from `cloudflared` on the Compose network. Cloudflare Access signs the Owner in, and the admin app also rejects any request without a valid `Cf-Access-Jwt-Assertion` header, so reaching it some other way gets nothing.
+The admin app runs on a home server (any arm64 or amd64 Linux machine with Docker) in Docker Compose next to `cloudflared` (ADR 0002). `compose.yaml` at the repo root defines both. No ports are published: `cloudflared` dials out to Cloudflare, and the admin app is reachable only from `cloudflared` on the Compose network. Cloudflare Access signs the Owner in, and the admin app also rejects any request without a valid `Cf-Access-Jwt-Assertion` header, so reaching it some other way gets nothing.
 
 These steps need a human. They assume the Profile Domain and the Cloudflare account from issue #3 exist.
 
@@ -26,16 +26,16 @@ The Owner chose a subdomain of the Profile Domain over a separate domain. The tr
 
 ## 4. Create the Backup bucket
 
-Each Backup is stored as a restic snapshot of the Profile database in R2, encrypted on the Pi before upload (ADR 0003).
+Each Backup is stored as a restic snapshot of the Profile database in R2, encrypted on the server before upload (ADR 0003).
 
 1. In the Cloudflare dashboard, go to **R2 Object Storage > Create bucket** and name it `private-profile-backups`.
 2. Under **Manage API tokens**, create an **Account API token** named `private-profile-backups` with **Object Read & Write** permission, applied to that bucket only. Save its **Access Key ID** and **Secret Access Key** in the password manager.
-3. Generate a long random restic password in the password manager. Without it the Backups can't be read, so it must not live only on the Pi.
+3. Generate a long random restic password in the password manager. Without it the Backups can't be read, so it must not live only on the server.
 4. The repository is `s3:https://<account id>.r2.cloudflarestorage.com/private-profile-backups`. It goes in `admin.env` as `RESTIC_REPOSITORY`.
 
 `scripts/setup-cloudflare.sh` walks through steps 1 to 4 and saves the settings to `deploy/admin.env`. If `restic` is installed where the wizard runs, it also creates the restic repository, so step 7 can be skipped.
 
-## 5. Put the settings and secrets on the Pi
+## 5. Put the settings and secrets on the server
 
 They live in `/etc/private-profile`, outside git. The source of truth for every token and password is the Owner's password manager.
 
@@ -57,7 +57,7 @@ To keep them somewhere else, set `PRIVATE_PROFILE_CONFIG` to that directory when
 
 ## 6. Get the code
 
-The repo is private, so the Pi clones it with a read-only deploy key that can't push:
+The repo is private, so the server clones it with a read-only deploy key that can't push:
 
 ```sh
 ssh-keygen -t ed25519 -N '' -C 'private-profile deploy key' -f ~/.ssh/private_profile_deploy
@@ -102,22 +102,22 @@ docker stats $(docker compose ps -q admin)
 
 Note the highest **MEM USAGE**. Raise `mem_limit` only if a Backup comes close to it or is killed, and to 384 MiB at most, with the measured figure in the comment above it.
 
-To update, run `scripts/deploy.sh` from your own checkout once a release is on `main`, with `DEPLOY_HOST` set to the Pi's SSH destination (it has no default):
+To update, run `scripts/deploy.sh` from your own checkout once a release is on `main`, with `DEPLOY_HOST` set to the server's SSH destination (it has no default):
 
 ```sh
-DEPLOY_HOST=<user>@<pi host> scripts/deploy.sh
+DEPLOY_HOST=<user>@<server> scripts/deploy.sh
 ```
 
-Over SSH it moves the Pi's checkout to `main` (or a release tag: `scripts/deploy.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the Pi's checkout has local changes, and before touching the containers if a secret file from step 5 is missing. `DEPLOY_DIR` overrides the checkout path, `~/private-profile`.
+Over SSH it moves the server's checkout to `main` (or a release tag: `scripts/deploy.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the server's checkout has local changes, and before touching the containers if a secret file from step 5 is missing. `DEPLOY_DIR` overrides the checkout path, `~/private-profile`.
 
-By hand on the Pi, the same update is `git pull`, then `docker compose up -d --build`.
+By hand on the server, the same update is `git pull`, then `docker compose up -d --build`.
 
 ## 9. Check the acceptance criteria (issue #8)
 
 - **Admin hostname is hard to guess.** The tunnel's only route is the admin hostname from step 1, and nothing on the bare Profile Domain points at the tunnel.
-- **No inbound ports.** `docker compose ps` shows no published ports, `sudo ss -tlnp` on the Pi shows nothing new listening on a public interface, and the router has no port forwards to the Pi.
+- **No inbound ports.** `docker compose ps` shows no published ports, `sudo ss -tlnp` on the server shows nothing new listening on a public interface, and the router has no port forwards to the server.
 - **Sign in from away from home.** On a phone with Wi-Fi off, open the admin hostname, sign in with the Owner's email, create a Profile, and send it mail from another account. It arrives in the Personal Inbox (this needs the Email Worker from issue #3).
-- **Requests without a valid Access JWT are rejected.** On the Pi, both of these print `401`:
+- **Requests without a valid Access JWT are rejected.** On the server, both of these print `401`:
 
   ```sh
   docker compose exec admin node -e 'fetch("http://localhost:8080/").then(r => console.log(r.status))'

@@ -1,4 +1,4 @@
-# The admin app and cloudflared on the Raspberry Pi 4. See docs/pi-deployment.md.
+# The admin app and cloudflared on a home server. See docs/deployment.md.
 #
 # No ports are published: cloudflared dials out to Cloudflare, and the admin
 # app is reachable only from cloudflared on this Compose network. Settings
@@ -14,7 +14,7 @@ services:
       dockerfile: apps/admin/Dockerfile
     image: private-profile-admin
     restart: unless-stopped
-    # About 65 MiB in use on the Pi. The heap cap makes Node collect garbage
+    # About 65 MiB in use on an arm64 server. The heap cap makes Node collect garbage
     # before the container limit kills it.
     mem_limit: 256m
     env_file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/admin.env
@@ -37,7 +37,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:2026.9.3
     restart: unless-stopped
-    # About 18 MiB in use on the Pi.
+    # About 18 MiB in use on an arm64 server.
     mem_limit: 128m
     # The image already runs `cloudflared --no-autoupdate`.
     command: tunnel run
