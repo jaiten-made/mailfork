@@ -102,7 +102,13 @@ docker stats $(docker compose ps -q admin)
 
 Note the highest **MEM USAGE**. Raise `mem_limit` only if a Backup comes close to it or is killed, and to 384 MiB at most, with the measured figure in the comment above it.
 
-To update, run `scripts/deploy-pi.sh` from your own checkout once a release is on `main`. Over SSH it moves the Pi's checkout to `main` (or a release tag: `scripts/deploy-pi.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the Pi's checkout has local changes, and before touching the containers if a secret file from step 5 is missing. `PI_HOST` and `PI_DIR` override `user@server` and `~/private-profile`.
+To update, run `scripts/deploy.sh` from your own checkout once a release is on `main`, with `DEPLOY_HOST` set to the Pi's SSH destination (it has no default):
+
+```sh
+DEPLOY_HOST=<user>@<pi host> scripts/deploy.sh
+```
+
+Over SSH it moves the Pi's checkout to `main` (or a release tag: `scripts/deploy.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the Pi's checkout has local changes, and before touching the containers if a secret file from step 5 is missing. `DEPLOY_DIR` overrides the checkout path, `~/private-profile`.
 
 By hand on the Pi, the same update is `git pull`, then `docker compose up -d --build`.
 
