@@ -1,3 +1,5 @@
+// Outside the agreed seams: issue #9 asks for the restic Backup target to be
+// tested against a real local repository, restoring to an identical database.
 import { execFileSync, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -96,7 +98,7 @@ describe.skipIf(!hasRestic && !process.env.CI)("the restic Backup target", { tim
   });
 
   it.each(["change", "nightly", "startup"] as const)(
-    "tags a %s snapshot with only its reason",
+    "tags a %s Backup with only its reason",
     async (tag) => {
       await target().backup(tag, running());
 
