@@ -198,17 +198,20 @@ finish() {
 # the whole file before the first prompt, so an edit mid-run can't break it.
 # ──────────────────────────────────────────────────────────────────────────
 
-# Cloudflare setup for issues #3 (mail path) and #8 (tunnel and Access).
-# Runbooks: docs/provisioning.md and docs/pi-deployment.md.
+# Cloudflare setup for issues #3 (mail path), #8 (tunnel and Access) and #9
+# (Backups). Runbooks: docs/provisioning.md and docs/pi-deployment.md.
 #
 # Non-secret settings go to deploy/admin.env (ignored by git), to copy to the
 # Pi as /etc/private-profile/admin.env. Tokens never pass through this script:
 # they go from Cloudflare to the Owner's password manager, then to the Pi.
+# The one exception is `restic init`, which gets the R2 key pair in its
+# environment and nowhere else; nothing is saved.
 
 cd "$(git rev-parse --show-toplevel)"
 ENV_FILE=deploy/admin.env
 WRANGLER_CONFIG=apps/email-worker/wrangler.jsonc
 SEED_LOCAL_PART=seed-test
+BACKUP_BUCKET=private-profile-backups
 
 wrangler() { pnpm --dir apps/email-worker exec wrangler "$@"; }
 
@@ -235,7 +238,7 @@ check_mail() {
 
 run_wizard() {
 
-TOTAL_STAGES=11
+TOTAL_STAGES=13
 
 [[ -f "$ENV_FILE" ]] || (umask 077 && cp deploy/admin.env.example "$ENV_FILE")
 
@@ -374,7 +377,43 @@ step "Find your team domain under Account details on the Zero Trust Overview."
 ask_until ACCESS_TEAM_DOMAIN "Team domain (such as owner.cloudflareaccess.com):" \
   '^[a-z0-9-]+\.cloudflareaccess\.com$' "Just <team>.cloudflareaccess.com, no https://."
 write_env ACCESS_TEAM_DOMAIN "$ACCESS_TEAM_DOMAIN"
-say "Next: copy $ENV_FILE to the Pi and follow docs/pi-deployment.md from step 4."
+pause
+
+stage "Create the Backup bucket"
+say "Backups are restic snapshots of the Profile database in R2, encrypted on the"
+say "Pi before upload (docs/adr/0003)."
+open_url "https://dash.cloudflare.com"
+step "Go to R2 Object Storage > Create bucket, named $BACKUP_BUCKET. Keep the defaults."
+step "Back on R2 Object Storage, open Manage API tokens > Create Account API token,"
+step "named private-profile-backups."
+step "Permissions: Object Read & Write. Apply to specific buckets only: $BACKUP_BUCKET."
+step "Create it and save the Access Key ID and Secret Access Key in your password manager."
+step "In your password manager, also generate a long random restic password."
+warn "Without the restic password the Backups can't be read. Keep it only in the"
+warn "password manager and on the Pi."
+write_env RESTIC_REPOSITORY "s3:https://$CLOUDFLARE_ACCOUNT_ID.r2.cloudflarestorage.com/$BACKUP_BUCKET"
+pause "Press Enter once all three are in your password manager."
+
+stage "Create the restic repository"
+say "The admin app never creates the repository, so a wrong setting can't start"
+say "a second, empty one."
+if command -v restic >/dev/null 2>&1; then
+  say "Paste the R2 key pair from your password manager. It goes only to restic."
+  ask_secret R2_ACCESS_KEY_ID "R2 Access Key ID:"
+  ask_secret R2_SECRET_ACCESS_KEY "R2 Secret Access Key:"
+  say "restic now asks for the restic password twice. Paste it from your password manager."
+  if AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+    restic --repo "$RESTIC_REPOSITORY" init; then
+    printf '  %s✓ created%s the restic repository\n' "$GREEN" "$RESET"
+  else
+    SKIPPED+=("restic init failed: create the repository on the Pi (docs/pi-deployment.md step 7)")
+  fi
+  unset R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY
+else
+  SKIPPED+=("restic isn't installed here: create the repository on the Pi (docs/pi-deployment.md step 7)")
+  warn "restic isn't installed here. Create the repository on the Pi instead (docs/pi-deployment.md step 7)."
+fi
+say "Next: copy $ENV_FILE to the Pi and follow docs/pi-deployment.md from step 5."
 pause
 
 finish
