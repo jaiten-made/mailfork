@@ -1129,6 +1129,8 @@ describe("the page", () => {
   it.each([
     ["/style.css", "text/css; charset=utf-8"],
     ["/app.js", "text/javascript; charset=utf-8"],
+    ["/fonts/barlow-semi-condensed-600.ttf", "font/ttf"],
+    ["/fonts/barlow-semi-condensed-800.ttf", "font/ttf"],
   ])("serves %s", async (path, contentType) => {
     const admin = startAdmin();
 

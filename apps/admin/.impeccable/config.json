@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "public/style.css"
+        ],
+        "createdAt": "2026-10-24T23:45:43.883Z",
+        "reason": "Claude, backed by the finish review: the hatch is the non-colour state mark for out-of-sync and sealed slots"
+      }
+    ]
+  }
+}
