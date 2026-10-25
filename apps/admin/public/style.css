@@ -513,8 +513,10 @@ main h2 {
   overflow-wrap: anywhere;
 }
 
-/* After a failed push: KV may not match the registry until a reconcile. */
-.push-failed {
+/* After a failed push: KV may not match the registry until a reconcile.
+   After a failed Backup or check: the latest changes are only on the Pi. */
+.push-failed,
+.backup-failed {
   margin-bottom: 28px;
   padding: 12px 16px;
   border-left: 4px solid var(--error);
@@ -523,15 +525,21 @@ main h2 {
   box-shadow: var(--shadow);
 }
 
-.push-failed h2 {
+.push-failed h2,
+.backup-failed h2 {
   margin: 0 0 4px;
   font-size: 1rem;
   color: var(--error);
 }
 
-.push-failed p {
+.push-failed p,
+.backup-failed p {
   margin: 0 0 12px;
   max-width: 60ch;
+}
+
+.backup-failed p:last-child {
+  margin-bottom: 0;
 }
 
 .push-failed button {

@@ -68,6 +68,15 @@
         <p id="push-failed-error" class="error" role="alert" hidden></p>
       </section>
 
+      <section id="backup-failed" class="backup-failed" hidden aria-labelledby="backup-failed-heading">
+        <h2 id="backup-failed-heading">The latest Backup failed.</h2>
+        <p>
+          Changes since then are only on the Pi. The admin app tries again after
+          the next change and tonight at 03:00.
+        </p>
+        <p>Last successful Backup: <span id="backup-failed-last">unknown</span></p>
+      </section>
+
       <section id="issued" class="issued" hidden aria-labelledby="issued-heading">
         <h2 id="issued-heading" class="visually-hidden">New Profile Address</h2>
         <div class="ticket ticket-new">

@@ -1,7 +1,7 @@
 // The admin page: create a Profile from a Label and, optionally, a Custom
 // Address, list live and Retired Profiles, copy a Profile Address, rename a
-// Label and Retire a Profile, and see or fix a failed push to Cloudflare, all
-// through the JSON API.
+// Label and Retire a Profile, see or fix a failed push to Cloudflare, and see
+// a failed Backup, all through the JSON API.
 
 const SIGNED_OUT = "Your Cloudflare Access sign-in has expired. Reload the page to sign in again.";
 const UNREACHABLE = "Couldn't reach the admin app. Check your connection and try again.";
@@ -244,8 +244,21 @@ async function loadAddressList() {
   }
 }
 
+// Shown after a failed Backup or check until the next Backup succeeds.
+async function loadBackup() {
+  try {
+    const { backupFailed, lastSuccessfulBackupAt } = await api("/api/backup");
+    $("backup-failed").hidden = !backupFailed;
+    $("backup-failed-last").textContent = lastSuccessfulBackupAt
+      ? dateFormat.format(new Date(lastSuccessfulBackupAt))
+      : "unknown";
+  } catch {
+    // The live list shows the same failure; the banner keeps its last state.
+  }
+}
+
 function loadProfiles() {
-  return Promise.all([loadLive(), loadRetired(), loadAddressList()]);
+  return Promise.all([loadLive(), loadRetired(), loadAddressList(), loadBackup()]);
 }
 
 async function reconcile(button, error) {

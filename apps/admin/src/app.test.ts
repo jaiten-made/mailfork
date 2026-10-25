@@ -1449,6 +1449,15 @@ describe("the page", () => {
     expect(html).toContain("Push the address list again");
   });
 
+  it("has a banner for a failed Backup with the time of the last successful one", async () => {
+    const admin = startAdmin();
+
+    const html = await (await admin.request("/")).text();
+
+    expect(html).toContain("The latest Backup failed.");
+    expect(html).toContain("Last successful Backup:");
+  });
+
   it.each([
     ["/style.css", "text/css; charset=utf-8"],
     ["/app.js", "text/javascript; charset=utf-8"],
