@@ -4,15 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#b3123a" />
+    <meta name="theme-color" content="#16181c" />
     <title>Private Profile</title>
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/app.js"></script>
   </head>
   <body>
+    <svg class="sprite" aria-hidden="true">
+      <symbol id="i-copy" viewBox="0 0 20 20"><rect x="6.5" y="6.5" width="10" height="11" rx="1.5"/><path d="M13.5 6.5V4a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 4v9A1.5 1.5 0 0 0 5 14.5h1.5"/></symbol>
+      <symbol id="i-check" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 20 20"><path d="M5 18V2.5"/><path d="M5 3h10l-2.5 3.5L15 10H5z" fill="currentColor"/></symbol>
+    </svg>
+
     <header class="counter">
-      <div class="wrap">
-        <h1>Private Profile</h1>
+      <div class="counter-inner">
+        <h1 class="visually-hidden">Private Profile</h1>
         <form id="create-form" class="create" novalidate>
           <label for="create-label">Label for a new Profile</label>
           <div class="create-row">
@@ -28,7 +34,7 @@
               required
               aria-describedby="create-error"
             />
-            <button type="submit">Create</button>
+            <button type="submit" class="create-submit">Create</button>
           </div>
           <details id="custom" class="custom">
             <summary>Choose the address</summary>
@@ -50,45 +56,28 @@
               Leave it blank for a Generated Address.
             </p>
             <p id="custom-error" class="error" aria-live="polite" hidden></p>
-            <p id="custom-preview" class="hint" aria-live="polite" hidden></p>
+            <p id="custom-preview" class="preview" aria-live="polite" hidden></p>
           </details>
           <p id="create-error" class="error" role="alert" hidden></p>
         </form>
       </div>
     </header>
 
-    <main class="wrap">
-      <section id="push-failed" class="push-failed" hidden aria-labelledby="push-failed-heading">
-        <h2 id="push-failed-heading">The latest change didn't reach Cloudflare.</h2>
-        <p>
-          A new address may not accept mail yet, and a Retired Address may still
-          forward it. Don't hand out a new address until this is fixed.
-        </p>
-        <button type="button" id="push-failed-retry">Push the address list again</button>
-        <p id="push-failed-error" class="error" role="alert" hidden></p>
-      </section>
-
-      <section id="issued" class="issued" hidden aria-labelledby="issued-heading">
-        <h2 id="issued-heading" class="visually-hidden">New Profile Address</h2>
-        <div class="ticket ticket-new">
-          <div class="ticket-stub">
-            <span class="ticket-label" id="issued-label"></span>
-          </div>
-          <div class="ticket-body">
-            <span class="address" id="issued-address"></span>
-            <button type="button" class="copy" id="issued-copy">
-              <svg aria-hidden="true" viewBox="0 0 20 20"><rect x="6.5" y="6.5" width="10" height="11" rx="1.5"/><path d="M13.5 6.5V4a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 4v9A1.5 1.5 0 0 0 5 14.5h1.5"/></svg>
-              <span class="copy-text">Copy</span>
-            </button>
-          </div>
+    <main class="wall-wrap">
+      <section id="push-failed" class="alert" hidden aria-labelledby="push-failed-heading">
+        <svg class="alert-flag" aria-hidden="true"><use href="#i-flag"/></svg>
+        <div class="alert-body">
+          <h2 id="push-failed-heading">The latest change didn't reach Cloudflare.</h2>
+          <p>
+            A new address may not accept mail yet, and a Retired Address may still
+            forward it. Don't hand out a new address until this is fixed.
+          </p>
+          <button type="button" id="push-failed-retry" class="button button-flag">Push the address list again</button>
+          <p id="push-failed-error" class="error" role="alert" hidden></p>
         </div>
-        <p class="notice" role="status">
-          A new address can take up to a minute to start working. Wait a minute
-          before you use it for a signup that sends a verification email.
-        </p>
       </section>
 
-      <section id="retired-notice" class="retired-notice" hidden tabindex="-1" aria-labelledby="retired-notice-heading">
+      <section id="retired-notice" class="notice" hidden tabindex="-1" aria-labelledby="retired-notice-heading">
         <h2 id="retired-notice-heading" class="visually-hidden">Profile Retired</h2>
         <p role="status">
           <span class="address" id="retired-notice-address"></span> is Retired.
@@ -97,53 +86,77 @@
         </p>
       </section>
 
-      <section aria-labelledby="live-heading">
-        <h2 id="live-heading">Live Profiles <span id="live-count" class="count"></span></h2>
+      <section class="bank" aria-labelledby="live-heading">
+        <h2 id="live-heading" class="bank-heading">Live Profiles <span id="live-count" class="count"></span></h2>
         <p id="list-error" class="error" role="alert" hidden></p>
         <p id="empty" class="empty" hidden>
           No Profiles yet. Give one a Label above to get its first address.
         </p>
-        <ul id="profiles" class="tickets" aria-busy="true"></ul>
+        <section id="issued" class="issued" hidden aria-labelledby="issued-heading">
+          <h3 id="issued-heading" class="visually-hidden">New Profile Address</h3>
+          <div class="door door-issued" data-flag="up">
+            <div class="door-head">
+              <span class="plate" id="issued-plate" aria-hidden="true"></span>
+              <span class="door-label" id="issued-label"></span>
+              <svg class="slot-flag" aria-hidden="true"><use href="#i-flag"/></svg>
+            </div>
+            <span class="address" id="issued-address"></span>
+            <button type="button" class="button copy" id="issued-copy">
+              <svg aria-hidden="true"><use href="#i-copy"/></svg>
+              <span class="copy-text">Copy</span>
+            </button>
+            <div class="flag" role="status">
+              <p class="flag-text" id="issued-flag-text">
+                A new address can take up to a minute to start working. Wait a
+                minute before you use it for a signup that sends a verification
+                email.
+              </p>
+              <span class="flag-timer" aria-hidden="true"></span>
+            </div>
+          </div>
+        </section>
+        <ul id="profiles" class="wall" aria-busy="true"></ul>
       </section>
 
-      <section id="retired-section" class="retired-section" hidden aria-labelledby="retired-heading">
-        <h2 id="retired-heading">Retired Profiles <span id="retired-count" class="count"></span></h2>
+      <section id="retired-section" class="bank bank-retired" hidden aria-labelledby="retired-heading">
+        <h2 id="retired-heading" class="bank-heading">Retired Profiles <span id="retired-count" class="count"></span></h2>
         <p class="empty">Mail to these addresses is rejected, and they are never issued again.</p>
         <p id="retired-error" class="error" role="alert" hidden></p>
-        <ul id="retired" class="tickets"></ul>
+        <ul id="retired" class="wall"></ul>
       </section>
 
       <footer class="address-list">
-        <button type="button" id="reconcile">Push the address list to Cloudflare again</button>
+        <button type="button" id="reconcile" class="quiet">Push the address list to Cloudflare again</button>
         <p id="reconcile-status" role="status"></p>
       </footer>
     </main>
 
-    <template id="ticket-template">
-      <li class="ticket">
-        <div class="ticket-stub">
-          <span class="ticket-label"></span>
-          <time class="created"></time>
-          <div class="ticket-actions">
-            <button type="button" class="rename">Rename</button>
-            <button type="button" class="retire">Retire</button>
-          </div>
+    <template id="door-template">
+      <li class="door">
+        <div class="door-head">
+          <span class="plate" aria-hidden="true"></span>
+          <span class="door-label"></span>
           <form class="rename-form" hidden>
             <label class="visually-hidden">New Label</label>
             <input type="text" name="label" maxlength="100" autocomplete="off" required />
-            <div class="rename-actions">
-              <button type="submit">Save</button>
-              <button type="button" class="cancel">Cancel</button>
+            <div class="form-actions">
+              <button type="submit" class="button button-ink">Save</button>
+              <button type="button" class="button cancel">Cancel</button>
             </div>
             <p class="error" role="alert" hidden></p>
           </form>
         </div>
-        <div class="ticket-body">
-          <span class="address"></span>
-          <button type="button" class="copy">
-            <svg aria-hidden="true" viewBox="0 0 20 20"><rect x="6.5" y="6.5" width="10" height="11" rx="1.5"/><path d="M13.5 6.5V4a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 4v9A1.5 1.5 0 0 0 5 14.5h1.5"/></svg>
-            <span class="copy-text">Copy</span>
-          </button>
+        <span class="address"></span>
+        <button type="button" class="button copy">
+          <svg aria-hidden="true"><use href="#i-copy"/></svg>
+          <span class="copy-text">Copy</span>
+        </button>
+        <div class="door-foot">
+          <time class="created"></time>
+          <div class="door-actions">
+            <button type="button" class="quiet rename">Rename</button>
+            <button type="button" class="quiet retire">Retire</button>
+          </div>
         </div>
         <form class="retire-form" hidden>
           <p class="retire-warning">
@@ -160,9 +173,9 @@
             spellcheck="false"
             required
           />
-          <div class="retire-actions">
-            <button type="submit">Retire</button>
-            <button type="button" class="cancel">Cancel</button>
+          <div class="form-actions">
+            <button type="submit" class="button button-flag">Retire</button>
+            <button type="button" class="button cancel">Cancel</button>
           </div>
           <p class="error" role="alert" hidden></p>
         </form>
@@ -170,15 +183,16 @@
     </template>
 
     <template id="retired-template">
-      <li class="ticket ticket-retired">
-        <div class="ticket-stub">
-          <span class="ticket-label"></span>
+      <li class="door door-sealed">
+        <div class="door-head">
+          <span class="plate" aria-hidden="true"></span>
+          <span class="door-label"></span>
+        </div>
+        <span class="address"></span>
+        <p class="sealed-dates">
           <time class="created"></time>
           <time class="retired-at"></time>
-        </div>
-        <div class="ticket-body">
-          <span class="address"></span>
-        </div>
+        </p>
       </li>
     </template>
   </body>

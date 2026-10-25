@@ -1,0 +1,129 @@
+{
+  "title": "Choose the visual world for the admin app",
+  "question": "The roll assigned Accreditation Pass. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Accreditation Pass",
+      "kicker": "THE ROLL",
+      "lineage": "Event accreditation passes and colour-coded lanyards",
+      "thesis": "Every Profile is a pass for one venue: the address is the name printed on it, the Label is the venue, and its colour strip says whether it gets you in.",
+      "palette": ["#f6f7f8", "#121419", "#1f3fd1", "#12805c", "#d99a00", "#cf2f2b"],
+      "materials": ["PVC pass stock", "lanyard webbing colour strip", "heavy grotesk name line"],
+      "viewport": "Cobalt lanyard band across the top holding the Label field and Create; below it the pass just issued, the address set huge on two lines with a green state strip and a Copy button you can hit with a thumb; the live list follows as slim passes, each with its state strip on the left.",
+      "risk": "Passes are about being identified; the colour coding has to stay a state signal and never turn into decoration or a badge-maker toy.",
+      "raised": [
+        { "from": "operate-b-exposure-record-zone-sheets", "raise": "State never rides on colour alone: a first-minute address carries a dotted strip, an out-of-sync list a hatched one." },
+        { "from": "rw-centre-rail-reference-setting", "raise": "Every rule is one device pixel and the palette holds three inks plus the state colours, nothing else." },
+        { "from": "emigre-bitmap-specimen", "raise": "One face at a committed scale ladder: the issued address is set at specimen size, never a bumped-up body line." }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "Private Bag Wall",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "Post office box banks: anodised doors, enamel numerals",
+      "thesis": "The Profiles are a wall of numbered boxes on your own premises; each door carries its address and a flag when something needs you.",
+      "palette": ["#c9cdd2", "#16181c", "#f2f3f4", "#e2452a", "#2f6b4f"],
+      "materials": ["anodised aluminium", "black enamel numerals", "vermilion flag"],
+      "viewport": "A dark enamel header with the Label field and Create; the new address shown as a box door with its number plate; live Profiles as a tight grid of doors on desktop and a stacked bank on a phone.",
+      "risk": "Familiar: mail is the obvious reading of an email product, and most runs in this category land on a postal metaphor."
+    },
+    {
+      "id": "challenger-transit",
+      "label": "Midnight Transit Diagram",
+      "verdict": "competitive",
+      "lineage": "Metro maps fired as enamel murals",
+      "thesis": "Mail's route from Cloudflare to the Pi to your inbox is a line on a diagram, and every state is service status.",
+      "palette": ["#0f1a3a", "#f4f5f0", "#e03a3e", "#2f6fe4", "#f2b632", "#2fa36b"],
+      "materials": ["midnight enamel", "porcelain station ticks", "coloured line inks"],
+      "viewport": "Midnight shell with the create field on top; a single route line shows sync health (live, arriving in about a minute, suspended); Profiles listed as stations on their line.",
+      "case": "Holds product clarity (propagation and sync states map onto service status) but loses audience identification on a phone task that is mostly create and copy.",
+      "risk": "The map can upstage a task that is really one text field and one Copy button.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram.webp"
+    },
+    {
+      "id": "challenger-jcard",
+      "label": "Cassette J-Card",
+      "verdict": "declined",
+      "lineage": "Hand-ruled mixtape inlays",
+      "thesis": "Live and Retired as side A and side B of one folded card.",
+      "palette": ["#ffffff", "#1d3fa8", "#9a9ca3", "#d8262c"],
+      "materials": ["lined inlay stock", "ballpoint"],
+      "viewport": "Side A lists live Profiles, flip to side B for Retired.",
+      "case": "Too playful for a tool you open mid-signup; hand lettering slows reading an address.",
+      "kept": "Live and Retired as hard halves with a clear switch, never one blended list.",
+      "risk": "Novelty over speed.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-cassette-j-card-hero.webp"
+    },
+    {
+      "id": "challenger-rail",
+      "label": "Centre-Rail Reference Setting",
+      "verdict": "declined",
+      "lineage": "Wide-margin scholarly editions",
+      "thesis": "Profiles as two columns of entries keyed down a vermilion rail.",
+      "palette": ["#efeadf", "#141414", "#c23b22"],
+      "materials": ["ruled hairlines", "small caps apparatus"],
+      "viewport": "Two narrow columns round a centre rail of keys.",
+      "case": "Two columns and a margin apparatus fight a one-handed phone task.",
+      "kept": "One-device-pixel rules and a strict three-ink limit.",
+      "risk": "Reads as a book, not a tool.",
+      "hero": "https://impeccable.style/worlds/cards/rw-centre-rail-reference-setting-hero.webp"
+    },
+    {
+      "id": "challenger-exposure",
+      "label": "Exposure Record Sheets",
+      "verdict": "declined",
+      "lineage": "Darkroom printer's exposure cards",
+      "thesis": "Overlapping sheets with hatch density for load and conflict.",
+      "palette": ["#e9e9e7", "#1a1a1a", "#c2187a"],
+      "materials": ["tracing paper", "zone ramp"],
+      "viewport": "Stacked translucent sheets of Profiles.",
+      "case": "Overlapping sheets add depth the task does not need.",
+      "kept": "State drawn without colour: hatch and dotted marks alongside the hue.",
+      "risk": "Visual noise on a small screen.",
+      "hero": "https://impeccable.style/worlds/cards/operate-b-exposure-record-zone-sheets-hero.webp"
+    },
+    {
+      "id": "challenger-bitmap",
+      "label": "Emigre Bitmap Specimen",
+      "verdict": "declined",
+      "lineage": "Emigre type specimens",
+      "thesis": "Addresses set in coarse bitmap display type.",
+      "palette": ["#f5f5f2", "#0b0b0b", "#ff3d00"],
+      "materials": ["pixel type", "halftone"],
+      "viewport": "Bitmap headline over dense columns.",
+      "case": "Pixel letterforms hurt reading an address you must copy exactly.",
+      "kept": "A committed type scale with the address at specimen size.",
+      "risk": "Retro-novelty.",
+      "hero": "https://impeccable.style/worlds/cards/emigre-bitmap-specimen-hero.webp"
+    },
+    {
+      "id": "challenger-crouwel",
+      "label": "Crouwel Grid Specimen",
+      "verdict": "declined",
+      "lineage": "Wim Crouwel gridded posters",
+      "thesis": "Letterforms and layout built from one visible grid.",
+      "palette": ["#ffffff", "#111111", "#1c5bd9"],
+      "materials": ["construction grid", "neutral grotesk"],
+      "viewport": "A visible grid with monumental type.",
+      "case": "A visible grid is decoration on a page with one field and a list.",
+      "kept": "A strict spacing module everything snaps to.",
+      "risk": "Poster, not tool.",
+      "hero": "https://impeccable.style/worlds/cards/crouwel-grid-specimen-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code", "toggle": false },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A clean, neutral admin page like the best forwarding-address services ship, executed carefully.",
+    "palette": ["#ffffff", "#111827", "#2563eb", "#16a34a"],
+    "materials": ["neutral cards", "system sans", "single blue accent"],
+    "viewport": "Top bar with the create field and button, the new address in a highlighted card, a plain table of Profiles below.",
+    "risk": "Indistinguishable from every other admin page; this is the SaaS look you said would feel wrong."
+  },
+  "steer": true
+}
