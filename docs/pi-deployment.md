@@ -26,7 +26,7 @@ The Owner chose a subdomain of the Profile Domain over a separate domain. The tr
 
 ## 4. Create the Backup bucket
 
-Backups are restic snapshots of the Profile database in R2, encrypted on the Pi before upload (ADR 0003).
+Each Backup is stored as a restic snapshot of the Profile database in R2, encrypted on the Pi before upload (ADR 0003).
 
 1. In the Cloudflare dashboard, go to **R2 Object Storage > Create bucket** and name it `private-profile-backups`.
 2. Under **Manage API tokens**, create an **Account API token** named `private-profile-backups` with **Object Read & Write** permission, applied to that bucket only. Save its **Access Key ID** and **Secret Access Key** in the password manager.

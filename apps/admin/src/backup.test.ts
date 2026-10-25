@@ -102,8 +102,8 @@ describe.skipIf(!hasRestic && !process.env.CI)("the restic Backup target", { tim
     async (tag) => {
       await target().backup(tag, running());
 
-      const snapshots = JSON.parse(restic("snapshots", "--json")) as { tags?: string[] }[];
-      expect(snapshots.map((snapshot) => snapshot.tags)).toEqual([[tag]]);
+      const backups = JSON.parse(restic("snapshots", "--json")) as { tags?: string[] }[];
+      expect(backups.map((backup) => backup.tags)).toEqual([[tag]]);
     },
   );
 

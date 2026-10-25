@@ -140,7 +140,7 @@ const RESTIC_EXIT_REASONS: Record<number, string> = {
  */
 export function resticBackupTarget(options: {
   databasePath: string;
-  /** A fixed path, so every snapshot holds the same file. */
+  /** A fixed path, so every restic snapshot holds the same file. */
   copyPath: string;
   /** Such as `s3:https://<account id>.r2.cloudflarestorage.com/<bucket>`. */
   repository: string;

@@ -380,8 +380,8 @@ write_env ACCESS_TEAM_DOMAIN "$ACCESS_TEAM_DOMAIN"
 pause
 
 stage "Create the Backup bucket"
-say "Backups are restic snapshots of the Profile database in R2, encrypted on the"
-say "Pi before upload (docs/adr/0003)."
+say "Each Backup is stored as a restic snapshot of the Profile database in R2,"
+say "encrypted on the Pi before upload (docs/adr/0003)."
 open_url "https://dash.cloudflare.com"
 step "Go to R2 Object Storage > Create bucket, named $BACKUP_BUCKET. Keep the defaults."
 step "Back on R2 Object Storage, open Manage API tokens > Create Account API token,"
