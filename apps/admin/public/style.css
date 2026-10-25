@@ -1,41 +1,88 @@
-/* Coat-check tickets: the address is the half you hand out, the stub with
-   the Label is the half you keep. Cloakroom red marks the counter. */
+/* A bank of private boxes: an aluminium wall of doors, each with an enamel
+   numeral plate and its address engraved large. Black enamel marks the
+   counter where boxes are issued. Vermilion is the mail flag: it appears
+   only when something needs the Owner. */
 :root {
-  --ticket-red: #b3123a;
-  --ticket-red-deep: #8c0c2c;
-  --ticket-red-dark: #5c0619;
-  --on-red: #fff6f7;
-  --on-red-soft: #ffd9df;
-  --ground: #eef0f3;
-  --paper: #ffffff;
-  --ink: #16181d;
-  --ink-soft: #4d5360;
-  --rule: #c9ced8;
-  --focus: #1f5fd1;
-  --error: #b3123a;
-  --ok: #1d6b45;
-  --radius: 10px;
-  --shadow: 0 1px 2px rgb(22 24 29 / 0.08), 0 4px 12px rgb(22 24 29 / 0.06);
+  --wall: #c5cad0;
+  --door: #e7eaed;
+  --door-edge: #969da6;
+  --door-shine: rgb(255 255 255 / 0.75);
+  --enamel: #16181c;
+  --on-enamel: #eef0f2;
+  --on-enamel-soft: #aab1ba;
+  --plate: #16181c;
+  --on-plate: #eef0f2;
+  --plate-edge: rgb(255 255 255 / 0.1);
+  --slot: #16181c;
+  --frame: #a9b0b8;
+  --field: #f4f5f7;
+  --field-edge: #737a84;
+  /* The counter is enamel in both schemes, so its controls keep light
+     aluminium values in dark mode too. */
+  --counter-field: #f4f5f7;
+  --counter-ink: #15171b;
+  --counter-placeholder: #5c636d;
+  --counter-caret: #962311;
+  --counter-button: #c5cad0;
+  --counter-button-hover: #dde1e5;
+  --counter-seam: #000;
+  --ink: #15171b;
+  --ink-soft: #464c55;
+  --flag: #962311;
+  --flag-bright: #e2452a;
+  --flag-tint: #f6ddd6;
+  --on-flag: #fff7f5;
+  --on-enamel-error: #ff8f78;
+  --ok: #276747;
+  --shadow: 0 1px 1px rgb(21 23 27 / 0.14), 0 2px 4px -1px rgb(21 23 27 / 0.18);
+  --radius: 6px;
+  --display: "Barlow Semi Condensed", system-ui, sans-serif;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   color-scheme: light dark;
 }
 
+/* Black anodised at night. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --ticket-red: #8f0f2f;
-    --ticket-red-deep: #6e0a23;
-    --ticket-red-dark: #47040f;
-    --ground: #121418;
-    --paper: #1d2027;
-    --ink: #eceef2;
-    --ink-soft: #a9afbb;
-    --rule: #3a3f4a;
-    --focus: #7aa7ff;
-    --error: #ff8fa3;
-    --ok: #79d4a3;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+    --wall: #111316;
+    --door: #1e2126;
+    --door-edge: #3a3f47;
+    --door-shine: rgb(255 255 255 / 0.07);
+    --enamel: #1c1f24;
+    --plate: #08090b;
+    --on-plate: #e9ecef;
+    --plate-edge: rgb(255 255 255 / 0.2);
+    --slot: #000;
+    --frame: #2c3037;
+    --field: #24282e;
+    --field-edge: #6b727c;
+    --ink: #e9ecef;
+    --ink-soft: #a5acb6;
+    --flag: #ff7458;
+    --flag-bright: #ff6a4d;
+    --flag-tint: #3a1d17;
+    --on-flag: #1a0b07;
+    --ok: #74d3a1;
+    --shadow: 0 1px 1px rgb(0 0 0 / 0.5), 0 2px 4px -1px rgb(0 0 0 / 0.6);
   }
+}
+
+/* Barlow Semi Condensed (OFL, public/fonts/OFL.txt): the enamel numerals,
+   the engraved addresses and the Labels. Body copy stays in the system face. */
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("/fonts/barlow-semi-condensed-600.ttf") format("truetype");
+  font-weight: 500 650;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("/fonts/barlow-semi-condensed-800.ttf") format("truetype");
+  font-weight: 700 900;
+  font-display: swap;
 }
 
 *,
@@ -46,6 +93,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--door-edge) var(--wall);
 }
 
 [hidden] {
@@ -54,28 +102,27 @@ html {
 
 body {
   margin: 0;
-  background: var(--ground);
+  background: var(--wall);
   color: var(--ink);
   font: 1rem/1.5 var(--sans);
   font-variant-numeric: tabular-nums;
   min-height: 100dvh;
+  caret-color: var(--flag);
+  accent-color: var(--enamel);
 }
 
 ::selection {
-  background: var(--ticket-red);
-  color: var(--on-red);
+  background: var(--enamel);
+  color: var(--on-enamel);
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
-.wrap {
-  width: 100%;
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 0 16px;
+.sprite {
+  display: none;
 }
 
 .visually-hidden {
@@ -88,8 +135,13 @@ body {
 }
 
 h1,
-h2 {
+h2,
+p {
   margin: 0;
+}
+
+h1,
+h2 {
   line-height: 1.2;
   text-wrap: balance;
 }
@@ -106,26 +158,128 @@ button {
 
 button:disabled {
   cursor: progress;
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
-/* The counter: where tickets are issued. */
+svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Buttons and fields shared by the counter, the doors and the alert. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--field-edge);
+  border-radius: var(--radius);
+  background: var(--door);
+  box-shadow: inset 0 1px 0 var(--door-shine);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+}
+
+.button-ink {
+  background: var(--enamel);
+  border-color: var(--enamel);
+  color: var(--on-enamel);
+  box-shadow: none;
+}
+
+.button-ink:hover:not(:disabled) {
+  border-color: var(--enamel);
+  background: color-mix(in srgb, var(--enamel) 85%, var(--door));
+}
+
+.button-flag {
+  background: var(--flag);
+  border-color: var(--flag);
+  color: var(--on-flag);
+  box-shadow: none;
+}
+
+.button-flag:hover:not(:disabled) {
+  border-color: var(--flag);
+  background: color-mix(in srgb, var(--flag) 85%, var(--enamel));
+}
+
+.quiet {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.quiet:hover {
+  color: var(--ink);
+}
+
+.quiet.retire:hover {
+  color: var(--flag);
+}
+
+.field,
+.door input,
+.alert input {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--field-edge);
+  border-radius: var(--radius);
+  background: var(--field);
+  color: var(--ink);
+}
+
+.error {
+  color: var(--flag);
+  font-weight: 600;
+}
+
+/* The counter: where boxes are issued. */
 .counter {
-  background: var(--ticket-red);
-  color: var(--on-red);
-  padding: 20px 0 24px;
+  background: var(--enamel);
+  color: var(--on-enamel);
+  padding: 20px 0 22px;
+  border-bottom: 1px solid var(--counter-seam);
+  box-shadow: 0 1px 0 var(--door-shine), 0 2px 6px -2px rgb(0 0 0 / 0.4);
 }
 
-.counter h1 {
+.counter-inner,
+.wall-wrap {
+  width: 100%;
+  max-width: calc(72rem + 48px);
+  margin: 0 auto;
+  padding-inline: 16px;
+}
+
+.counter :focus-visible {
+  outline-color: var(--on-enamel);
+}
+
+.create {
+  max-width: 36rem;
+}
+
+.create > label {
+  display: block;
+  font-family: var(--display);
   font-size: 1.5rem;
   font-weight: 650;
-  margin-bottom: 20px;
-}
-
-.create label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .create-row {
@@ -136,84 +290,102 @@ button:disabled {
 .create input {
   flex: 1;
   min-width: 0;
-  min-height: 48px;
+  min-height: 52px;
   padding: 0 14px;
   border: 1px solid transparent;
   border-radius: var(--radius);
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--counter-field);
+  color: var(--counter-ink);
+  caret-color: var(--counter-caret);
   font-size: 1.0625rem;
 }
 
 .create input::placeholder {
-  color: var(--ink-soft);
+  color: var(--counter-placeholder);
 }
 
-.create input:focus-visible {
-  outline-color: var(--on-red);
+.create input[aria-invalid="true"] {
+  border-color: var(--on-enamel-error);
+  box-shadow: 0 0 0 1px var(--on-enamel-error);
 }
 
-.create button {
-  min-height: 48px;
-  padding: 0 20px;
-  border: 1px solid var(--on-red);
+.create-submit {
+  min-height: 52px;
+  padding: 0 22px;
+  border: 1px solid var(--counter-field);
   border-radius: var(--radius);
-  background: var(--ticket-red-deep);
-  color: var(--on-red);
-  font-weight: 650;
+  background: var(--counter-button);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  color: var(--counter-ink);
+  font-weight: 700;
+  font-size: 1.0625rem;
 }
 
-.create button:hover:not(:disabled) {
-  background: var(--ticket-red-dark);
-}
-
-.create button:focus-visible {
-  outline-color: var(--on-red);
+.create-submit:hover:not(:disabled) {
+  background: var(--counter-button-hover);
 }
 
 .custom {
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .custom summary {
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--on-enamel-soft);
   font-weight: 600;
-  min-height: 32px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
-.custom[open] summary {
-  margin-bottom: 8px;
+.custom summary:hover {
+  color: var(--on-enamel);
+}
+
+.custom > label {
+  display: block;
+  font-weight: 600;
+  margin: 4px 0 8px;
 }
 
 .custom input {
   width: 100%;
 }
 
-.custom input[aria-invalid="true"] {
-  border-color: var(--on-red);
-  border-width: 2px;
-}
-
-.custom .hint {
-  margin: 8px 0 0;
+.hint,
+.preview {
+  margin-top: 8px;
+  color: var(--on-enamel-soft);
   font-size: 0.9375rem;
+  max-width: 60ch;
 }
 
-.create .error {
-  margin: 10px 0 0;
-  color: var(--on-red);
-  font-weight: 600;
+.preview {
+  color: var(--on-enamel);
 }
 
-main {
-  padding-top: 24px;
-  padding-bottom: 48px;
+.counter .error {
+  margin-top: 10px;
+  color: var(--on-enamel-error);
 }
 
-main h2 {
+/* The wall. */
+.wall-wrap {
+  padding-block: 20px 48px;
+}
+
+.bank + .bank {
+  margin-top: 40px;
+}
+
+.bank-heading {
+  font-family: var(--display);
   font-size: 1.25rem;
-  font-weight: 650;
-  margin: 8px 0 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
 }
 
 .count {
@@ -221,124 +393,147 @@ main h2 {
   font-weight: 500;
 }
 
-.error {
-  color: var(--error);
-  margin: 0 0 12px;
+.bank > .error {
+  margin-bottom: 12px;
 }
 
 .empty {
   color: var(--ink-soft);
-  margin: 0;
   max-width: 60ch;
 }
 
-/* Tickets: a stub and a body divided by a perforation with notches. */
-.tickets {
+.bank-retired .empty {
+  margin-bottom: 12px;
+}
+
+/* One framed bank: doors share one-pixel seams, the frame shows through
+   the seams and any empty bay. */
+.wall {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
-}
-
-.ticket {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  background: var(--paper);
+  border: 1px solid var(--door-edge);
   border-radius: var(--radius);
+  background: var(--door);
   box-shadow: var(--shadow);
+  overflow: hidden;
 }
 
-.ticket-stub,
-.ticket-body {
-  padding: 12px 16px;
-  min-width: 0;
+.wall:empty {
+  display: none;
 }
 
-.ticket-stub {
-  container-type: inline-size;
+@media (min-width: 760px) {
+  .wall {
+    grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
+  }
+}
+
+/* A door: numeral plate and Label, the engraved address with Copy beside
+   it, and the created date with Rename and Retire underneath. */
+.door {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 12px;
-  row-gap: 2px;
+  padding: 12px 14px 2px;
+  border: 1px solid var(--door-edge);
+  border-radius: var(--radius);
+  background: var(--door);
+  box-shadow: inset 0 1px 0 var(--door-shine), var(--shadow);
 }
 
-.ticket-stub > :not(.ticket-actions) {
-  grid-column: 1;
+/* Each door draws the seam on its right and bottom; the frame clips the
+   outer ones, and an empty bay is a blank panel. */
+.wall > .door {
+  border: 0;
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 var(--door-shine), 1px 1px 0 var(--frame);
 }
 
-.ticket-body {
-  position: relative;
+.door > .door-head,
+.door > .door-foot,
+.door > .retire-form,
+.door > .flag {
+  grid-column: 1 / -1;
+}
+
+.door-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-top: 1px dashed var(--rule);
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  min-width: 0;
+  margin-bottom: 8px;
 }
 
-/* The notches either end of the perforation. */
-.ticket-body::before,
-.ticket-body::after {
+/* The letter slot, top right of every door. */
+.door-head::after {
   content: "";
-  position: absolute;
-  top: -7px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--ground);
+  flex: none;
+  order: 3;
+  width: 30px;
+  height: 5px;
+  margin-left: auto;
+  border-radius: 3px;
+  background: var(--slot);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.6), 0 1px 0 var(--door-shine);
 }
 
-.ticket-body::before {
-  left: -7px;
+.plate {
+  flex: none;
+  min-width: 3.5rem;
+  padding: 2px 9px;
+  border-radius: 3px;
+  background: var(--plate);
+  color: var(--on-plate);
+  font-family: var(--display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px var(--plate-edge);
 }
 
-.ticket-body::after {
-  right: -7px;
-}
-
-.ticket-label {
+.door-label {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-family: var(--display);
+  font-size: 1.125rem;
   font-weight: 650;
   overflow-wrap: anywhere;
 }
 
-.created {
-  color: var(--ink-soft);
-  font-size: 0.875rem;
-}
-
 .address {
-  flex: 1;
   min-width: 0;
-  font-family: var(--mono);
-  font-size: 0.9375rem;
+  font-family: var(--display);
+  font-size: 1.1875rem;
+  font-weight: 600;
+  line-height: 1.3;
   overflow-wrap: break-word;
 }
 
+.address .domain {
+  color: var(--ink-soft);
+}
+
+/* Where the whole address has to be typed or read out, the domain is not
+   set quieter. */
+.retire-form label .address .domain,
+.notice .address .domain {
+  color: inherit;
+  font-weight: inherit;
+}
+
 .copy {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
   padding: 0 14px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper);
-  font-weight: 600;
 }
 
 .copy svg {
   width: 18px;
   height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-linejoin: round;
-}
-
-.copy:hover {
-  border-color: var(--ink-soft);
 }
 
 .copy[data-state="copied"] {
@@ -346,98 +541,69 @@ main h2 {
   color: var(--ok);
 }
 
-.ticket-actions {
-  grid-column: 2;
-  grid-row: 1 / span 2;
+.door-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--door-edge) 50%, transparent);
+}
+
+.created,
+.sealed-dates {
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+.created,
+.retired-at {
+  white-space: nowrap;
+}
+
+.door-actions {
   display: flex;
   gap: 12px;
 }
 
-/* On a phone, Rename and Retire would squeeze the created-at onto two
-   lines, so they get a row of their own. */
-@container (max-width: 400px) {
-  .ticket-actions {
-    grid-column: 1;
-    grid-row: auto;
-    margin: 2px 0 -10px -4px;
-  }
-}
-
-.rename,
-.retire {
-  min-height: 44px;
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--ink-soft);
-  font-size: 0.875rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.rename:hover {
-  color: var(--ink);
-}
-
-.retire:hover {
-  color: var(--error);
-}
-
-.ticket-stub > .rename-form {
-  grid-column: 1 / -1;
+/* Rename takes the Label's place in the head. */
+.door-head > .rename-form {
+  flex: 1 1 100%;
+  order: 4;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 4px;
 }
 
 .rename-form input {
   flex: 1 1 12rem;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper);
+  min-width: 0;
 }
 
-.rename-actions {
+.form-actions {
   display: flex;
   gap: 8px;
-}
-
-.rename-actions button {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper);
-  font-weight: 600;
-}
-
-.rename-actions button[type="submit"] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
 }
 
 .rename-form .error {
   flex-basis: 100%;
-  margin: 0;
 }
 
-/* Retire: typed confirmation under the ticket, since it can't be undone. */
+/* Retire: typed confirmation under the door, since it can't be undone. */
 .retire-form {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--rule);
+  margin: 0 -14px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--door-edge);
 }
 
 .retire-form > p,
 .retire-form > label {
   flex-basis: 100%;
-  margin: 0;
 }
 
 .retire-warning {
@@ -450,212 +616,322 @@ main h2 {
 }
 
 .retire-form label .address {
-  font-weight: 600;
+  font-size: inherit;
   overflow-wrap: anywhere;
 }
 
 .retire-form input {
   flex: 1 1 14rem;
   min-width: 0;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper);
   font-family: var(--mono);
 }
 
 .retire-form input[aria-invalid="true"] {
-  border-color: var(--error);
+  border-color: var(--flag);
+  box-shadow: 0 0 0 1px var(--flag);
 }
 
-.retire-actions {
-  display: flex;
-  gap: 8px;
+/* The door just issued: the address at reading-out size, and the mail flag
+   raised for the minute it can take to start working. */
+/* The issued door heads the wall it was just installed in. */
+.issued .door-issued {
+  box-shadow: inset 0 1px 0 var(--door-shine), var(--shadow);
 }
 
-.retire-actions button {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper);
-  font-weight: 600;
+.issued:not([hidden]):has(+ .wall:not(:empty)) .door-issued {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
-.retire-actions button[type="submit"] {
-  background: var(--ticket-red);
-  border-color: var(--ticket-red);
-  color: var(--on-red);
+.issued:not([hidden]) + .wall {
+  margin-top: -1px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
-.retire-actions button[type="submit"]:hover:not(:disabled) {
-  background: var(--ticket-red-deep);
+.door-issued {
+  position: relative;
+  padding: 16px 16px 0;
+  row-gap: 14px;
+  overflow: hidden;
 }
 
-/* After a Retire: says which address and how long KV takes. */
-.retired-notice {
-  margin-bottom: 28px;
-  padding: 12px 16px;
-  border-left: 4px solid var(--ticket-red);
-  border-radius: var(--radius);
-  background: var(--paper);
-  box-shadow: var(--shadow);
-}
-
-.retired-notice p {
-  margin: 0;
-  max-width: 60ch;
-}
-
-.retired-notice .address {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-/* After a failed push: KV may not match the registry until a reconcile.
-   After a failed Backup or check: the latest changes are only on the Pi. */
-.push-failed,
-.backup-failed {
-  margin-bottom: 28px;
-  padding: 12px 16px;
-  border-left: 4px solid var(--error);
-  border-radius: var(--radius);
-  background: var(--paper);
-  box-shadow: var(--shadow);
-}
-
-.push-failed h2,
-.backup-failed h2 {
-  margin: 0 0 4px;
-  font-size: 1rem;
-  color: var(--error);
-}
-
-.push-failed p,
-.backup-failed p {
-  margin: 0 0 12px;
-  max-width: 60ch;
-}
-
-.backup-failed p:last-child {
+.door-issued .door-head {
   margin-bottom: 0;
 }
 
-.push-failed button {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--radius);
-  background: var(--ticket-red);
-  color: var(--on-red);
-  font-weight: 600;
+.door-issued .door-label {
+  font-size: 1.25rem;
 }
 
-.push-failed button:hover:not(:disabled) {
-  background: var(--ticket-red-deep);
+.door-issued .address {
+  grid-column: 1 / -1;
+  font-size: clamp(1.875rem, 8vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  line-height: 1.05;
 }
 
-.push-failed .error {
-  margin: 12px 0 0;
+.door-issued .copy {
+  grid-column: 1 / -1;
+  min-height: 52px;
+  font-size: 1.0625rem;
 }
 
-/* On-demand reconcile: rarely needed, so kept quiet below the lists. */
-.address-list {
-  margin-top: 36px;
+@media (min-width: 560px) {
+  .door-issued .address {
+    grid-column: 1;
+  }
+
+  .door-issued .copy {
+    grid-column: 2;
+    padding: 0 22px;
+  }
 }
 
-.address-list button {
-  min-height: 44px;
-  padding: 0 4px;
-  border: 0;
-  background: none;
+/* The mail flag: hardware on the door's right edge, pivoting at the foot
+   of its pole. */
+.slot-flag {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  width: 52px;
+  height: 52px;
+  stroke-width: 1.5;
+  color: var(--flag-bright);
+  transform-origin: 13px 47px;
+}
+
+/* The slot moves in to leave the flag its edge. */
+.door-issued .door-head::after {
+  margin-right: 46px;
+}
+
+.flag {
+  position: relative;
+  margin: 0 -16px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--door-edge) 60%, transparent);
+}
+
+.flag-text {
+  max-width: 60ch;
+}
+
+/* A minute, running out along the bottom edge. */
+.flag-timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--flag-bright);
+  transform-origin: left;
+}
+
+.door-issued[data-flag="down"] .slot-flag {
+  color: var(--door-edge);
+  transform: rotate(90deg);
+}
+
+.door-issued[data-flag="down"] .flag {
   color: var(--ink-soft);
-  font-size: 0.875rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
-.address-list button:hover {
-  color: var(--ink);
+.door-issued[data-flag="down"] .flag-timer {
+  display: none;
 }
 
-.address-list p {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 0.875rem;
-}
-
-/* Retired tickets: handed back, so muted and with nothing left to copy. */
-.retired-section {
-  margin-top: 36px;
-}
-
-.retired-section .empty {
-  margin-bottom: 12px;
-}
-
-.ticket-retired {
-  background: transparent;
+/* The Retired bank: one column, so it never shows an empty bay. */
+.bank-retired .wall {
+  grid-template-columns: minmax(0, 1fr);
+  border-style: dashed;
+  background: var(--wall);
   box-shadow: none;
-  border: 1px dashed var(--rule);
 }
 
-.ticket-retired .ticket-label,
-.ticket-retired .address {
+.wall > .door-sealed {
+  background: var(--wall);
+}
+
+/* A sealed door: Retired, nothing left to copy. */
+.door-sealed {
+  padding-bottom: 12px;
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.door-sealed .plate {
+  background: transparent;
+  color: var(--ink-soft);
+  box-shadow: inset 0 0 0 1px var(--door-edge);
+}
+
+.door-sealed .door-head::after {
+  background: repeating-linear-gradient(-45deg, var(--door-edge) 0 2px, transparent 2px 5px);
+  box-shadow: inset 0 0 0 1px var(--door-edge);
+}
+
+.door-sealed .door-label,
+.door-sealed .address,
+.door-sealed .address .domain {
   color: var(--ink-soft);
 }
 
-.ticket-retired .address {
+.door-sealed .address {
+  grid-column: 1 / -1;
   text-decoration: line-through;
   text-decoration-thickness: 1px;
 }
 
-.ticket-retired .ticket-body::before,
-.ticket-retired .ticket-body::after {
-  display: none;
+.sealed-dates {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
+  margin-top: 6px;
 }
 
-.retired-at {
+/* After a failed push, or a failed Backup or check: the flag is up over
+   the whole wall. The hatched strip says it without colour. */
+.alert {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 20px 16px 16px;
+  border: 1px solid var(--flag);
+  border-radius: var(--radius);
+  background: var(--flag-tint);
+  overflow: hidden;
+}
+
+.alert::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 6px;
+  background: repeating-linear-gradient(-45deg, var(--flag) 0 4px, transparent 4px 8px);
+}
+
+.alert-flag {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  color: var(--flag);
+}
+
+.alert h2 {
+  font-size: 1.0625rem;
+  margin-bottom: 4px;
+}
+
+.alert p {
+  max-width: 60ch;
+}
+
+.alert p + p {
+  margin-top: 8px;
+}
+
+.alert .button {
+  margin-top: 12px;
+}
+
+.alert .error {
+  margin-top: 10px;
+}
+
+/* After a Retire: says which address and how long KV takes. */
+.notice {
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  border: 1px solid var(--door-edge);
+  border-radius: var(--radius);
+  background: var(--door);
+}
+
+.notice p {
+  max-width: 60ch;
+}
+
+.notice .address {
+  font-size: inherit;
+  overflow-wrap: anywhere;
+}
+
+/* On-demand reconcile: rarely needed, so kept quiet below the wall. */
+.address-list {
+  margin-top: 40px;
+}
+
+.address-list .quiet {
+  margin-left: -4px;
+}
+
+.address-list p {
   color: var(--ink-soft);
   font-size: 0.875rem;
 }
 
-/* The ticket just issued: the address at reading-out size. */
-.issued {
-  margin-bottom: 28px;
-}
-
-.ticket-new .address {
-  font-size: 1.1875rem;
-  font-weight: 600;
-}
-
-.notice {
-  margin: 12px 0 0;
-  color: var(--ink-soft);
-  max-width: 60ch;
+.address-list .error {
+  color: var(--flag);
 }
 
 @media (min-width: 560px) {
   .counter {
-    padding: 28px 0 32px;
+    padding-block: 18px 28px;
+  }
+
+  .counter-inner,
+  .wall-wrap {
+    padding-inline: 24px;
+  }
+
+  .wall-wrap {
+    padding-block: 28px 56px;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .issued:not([hidden]) .ticket-new {
-    animation: issue 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* The new door slides out from under the counter, then its flag goes up. */
+  .issued:not([hidden]) .door-issued {
+    animation: install 420ms var(--ease-out);
   }
 
-  @keyframes issue {
+  .issued:not([hidden]) .slot-flag {
+    animation: raise 360ms 300ms var(--ease-out) backwards;
+  }
+
+  .slot-flag {
+    transition: transform 500ms var(--ease-out), color 500ms;
+  }
+
+  .issued:not([hidden]) .flag-timer {
+    animation: minute 60s linear forwards;
+  }
+
+  @keyframes install {
     from {
-      transform: translateY(-12px);
-      clip-path: inset(0 0 100% 0);
+      transform: translateY(-16px);
+      clip-path: inset(0 0 100% 0 round var(--radius));
     }
     to {
       transform: none;
-      clip-path: inset(0 0 -20px 0);
+      clip-path: inset(0 0 0 0 round var(--radius));
+    }
+  }
+
+  @keyframes raise {
+    from {
+      transform: rotate(90deg);
+    }
+  }
+
+  @keyframes minute {
+    to {
+      transform: scaleX(0);
     }
   }
 }

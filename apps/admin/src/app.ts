@@ -65,19 +65,25 @@ const INVALID_LABEL = {
   error: `A Label must be 1 to ${MAX_LABEL_LENGTH} characters.`,
 };
 
-// The page is three small files, read once at start-up.
+// The page is three small files and its two font files (Barlow Semi
+// Condensed, OFL, see public/fonts/OFL.txt), read once at start-up.
 const PAGE_FILES = {
   "/": ["index.html", "text/html; charset=utf-8"],
   "/style.css": ["style.css", "text/css; charset=utf-8"],
   "/app.js": ["app.js", "text/javascript; charset=utf-8"],
+  "/fonts/barlow-semi-condensed-600.ttf": ["fonts/barlow-semi-condensed-600.ttf", "font/ttf"],
+  "/fonts/barlow-semi-condensed-800.ttf": ["fonts/barlow-semi-condensed-800.ttf", "font/ttf"],
 } as const;
 
 function loadPageRoutes() {
-  return Object.entries(PAGE_FILES).map(([path, [file, contentType]]) => ({
-    path,
-    contentType,
-    body: readFileSync(new URL(`../public/${file}`, import.meta.url), "utf8"),
-  }));
+  return Object.entries(PAGE_FILES).map(([path, [file, contentType]]) => {
+    const url = new URL(`../public/${file}`, import.meta.url);
+    return {
+      path,
+      contentType,
+      body: contentType.startsWith("font/") ? readFileSync(url) : readFileSync(url, "utf8"),
+    };
+  });
 }
 
 const NOT_A_STRING = { error: "A Custom Address must be text." };
