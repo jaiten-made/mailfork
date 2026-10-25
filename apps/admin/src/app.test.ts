@@ -1070,7 +1070,7 @@ describe("a Backup that runs too long", () => {
 });
 
 describe("the nightly Backup", () => {
-  // Local time, as on the Pi.
+  // Local time, as on the server.
   const OCTOBER_23 = new Date(2026, 9, 23, 3, 0).toISOString();
   const NOVEMBER_1 = new Date(2026, 10, 1, 3, 0).toISOString();
 

@@ -42,7 +42,7 @@ Delivering mail sent to a Profile Address by passing a copy on to the Personal I
 _Avoid_: Relay, redirect
 
 **Backup**:
-An encrypted copy of every Profile, live and Retired, kept away from the Pi so the Profiles survive losing it. Mail is never part of a Backup, because mail is never stored.
+An encrypted copy of every Profile, live and Retired, kept away from the server so the Profiles survive losing it. Mail is never part of a Backup, because mail is never stored.
 _Avoid_: Snapshot, export, dump
 
 **Retire**:

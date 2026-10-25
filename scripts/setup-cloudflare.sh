@@ -199,11 +199,11 @@ finish() {
 # ──────────────────────────────────────────────────────────────────────────
 
 # Cloudflare setup for issues #3 (mail path), #8 (tunnel and Access) and #9
-# (Backups). Runbooks: docs/provisioning.md and docs/pi-deployment.md.
+# (Backups). Runbooks: docs/provisioning.md and docs/deployment.md.
 #
 # Non-secret settings go to deploy/admin.env (ignored by git), to copy to the
-# Pi as /etc/private-profile/admin.env. Tokens never pass through this script:
-# they go from Cloudflare to the Owner's password manager, then to the Pi.
+# server as /etc/private-profile/admin.env. Tokens never pass through this script:
+# they go from Cloudflare to the Owner's password manager, then to the server.
 # The one exception is `restic init`, which gets the R2 key pair in its
 # environment and nowhere else; nothing is saved.
 
@@ -342,7 +342,7 @@ step "Create Token > Create Custom Token, named private-profile-admin."
 step "Permissions: Account > Workers KV Storage > Edit."
 step "Account Resources: Include > your account only."
 step "Create it and save the token in your password manager."
-warn "Don't paste it here. It goes on the Pi as /etc/private-profile/cloudflare-api-token."
+warn "Don't paste it here. It goes on the server as /etc/private-profile/cloudflare-api-token."
 pause "Press Enter once it's in your password manager."
 
 stage "Create the tunnel"
@@ -362,7 +362,7 @@ step "your password manager. Don't run the command."
 note "If Continue stays greyed out, go back to Tunnels: the tunnel already exists."
 step "Open the tunnel > Routes > add a Published application route:"
 step "$ADMIN_HOSTNAME, service URL http://admin:8080."
-warn "Don't paste the token here. It goes on the Pi as /etc/private-profile/tunnel-token."
+warn "Don't paste the token here. It goes on the server as /etc/private-profile/tunnel-token."
 pause "Press Enter once the hostname is added."
 
 stage "Protect it with Access"
@@ -381,7 +381,7 @@ pause
 
 stage "Create the Backup bucket"
 say "Each Backup is stored as a restic snapshot of the Profile database in R2,"
-say "encrypted on the Pi before upload (docs/adr/0003)."
+say "encrypted on the server before upload (docs/adr/0003)."
 open_url "https://dash.cloudflare.com"
 step "Go to R2 Object Storage > Create bucket, named $BACKUP_BUCKET. Keep the defaults."
 step "Back on R2 Object Storage, open Manage API tokens > Create Account API token,"
@@ -390,7 +390,7 @@ step "Permissions: Object Read & Write. Apply to specific buckets only: $BACKUP_
 step "Create it and save the Access Key ID and Secret Access Key in your password manager."
 step "In your password manager, also generate a long random restic password."
 warn "Without the restic password the Backups can't be read. Keep it only in the"
-warn "password manager and on the Pi."
+warn "password manager and on the server."
 write_env RESTIC_REPOSITORY "s3:https://$CLOUDFLARE_ACCOUNT_ID.r2.cloudflarestorage.com/$BACKUP_BUCKET"
 pause "Press Enter once all three are in your password manager."
 
@@ -406,14 +406,14 @@ if command -v restic >/dev/null 2>&1; then
     restic --repo "$RESTIC_REPOSITORY" init; then
     printf '  %s✓ created%s the restic repository\n' "$GREEN" "$RESET"
   else
-    SKIPPED+=("restic init failed: create the repository on the Pi (docs/pi-deployment.md step 7)")
+    SKIPPED+=("restic init failed: create the repository on the server (docs/deployment.md step 7)")
   fi
   unset R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY
 else
-  SKIPPED+=("restic isn't installed here: create the repository on the Pi (docs/pi-deployment.md step 7)")
-  warn "restic isn't installed here. Create the repository on the Pi instead (docs/pi-deployment.md step 7)."
+  SKIPPED+=("restic isn't installed here: create the repository on the server (docs/deployment.md step 7)")
+  warn "restic isn't installed here. Create the repository on the server instead (docs/deployment.md step 7)."
 fi
-say "Next: copy $ENV_FILE to the Pi and follow docs/pi-deployment.md from step 5."
+say "Next: copy $ENV_FILE to the server and follow docs/deployment.md from step 5."
 pause
 
 finish

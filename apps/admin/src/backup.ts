@@ -134,14 +134,14 @@ export function createBackupRunner(target: BackupTarget, now: () => Date): Backu
 
 // restic's documented exit codes worth a plain explanation.
 const RESTIC_EXIT_REASONS: Record<number, string> = {
-  10: "The restic repository does not exist. Create it with `restic init` (docs/pi-deployment.md)",
+  10: "The restic repository does not exist. Create it with `restic init` (docs/deployment.md)",
   11: "The restic repository is locked",
   12: "The restic password is wrong",
 };
 
 /**
  * Backs up the Profile database with restic, which encrypts it before it
- * leaves the Pi. Each Backup first takes an online SQLite copy to
+ * leaves the server. Each Backup first takes an online SQLite copy to
  * `copyPath`, so restic never reads a database mid-write. The repository
  * must already exist: this never runs `restic init`.
  */
