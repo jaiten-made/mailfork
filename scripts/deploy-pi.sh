@@ -58,6 +58,19 @@ fi
 after=$(git rev-parse --short HEAD)
 echo "Checkout: $before -> $after ($(git log -1 --format=%s))"
 
+# A release can add a secret (the Backup ones came with #9). Compose only
+# notices a missing secret file mid-`up`, so check them all before touching
+# the running containers.
+missing=$(docker compose config |
+  awk '/^secrets:/ { s = 1; next } /^[^ ]/ { s = 0 } s && $1 == "file:" { print $2 }' |
+  while read -r file; do [[ -f "$file" ]] || echo "$file"; done)
+if [[ -n "$missing" ]]; then
+  echo "deploy-pi: these secret files are missing on the Pi (docs/pi-deployment.md):" >&2
+  echo "$missing" >&2
+  echo "The containers are untouched. Add the files, then deploy again." >&2
+  exit 1
+fi
+
 docker compose up -d --build
 
 # Compose only recreates the container when the image changed, so wait for
