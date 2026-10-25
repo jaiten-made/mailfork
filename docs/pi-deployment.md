@@ -94,6 +94,14 @@ The Profile database is in the `private-profile_admin-data` volume, at `/data/pr
 
 The admin app takes a Backup on start-up, after every create, rename and Retire, and nightly at 03:00, followed by `restic check`. Before each Backup it copies the database with SQLite's online backup to `/data/backup/profiles.db`, and restic backs up that copy. restic's cache is in `/data/restic-cache`. A failed Backup or check shows a banner on the admin page and logs the reason.
 
+restic runs inside the admin container, so a Backup counts against its `mem_limit` in `compose.yaml`. The first `docker compose up` takes the start-up Backup; to measure it, watch the container while it runs (or while a create triggers another):
+
+```sh
+docker stats $(docker compose ps -q admin)
+```
+
+Note the highest **MEM USAGE**. Raise `mem_limit` only if a Backup comes close to it or is killed, and to 384 MiB at most, with the measured figure in the comment above it.
+
 To update: `git pull`, then `docker compose up -d --build`.
 
 ## 9. Check the acceptance criteria (issue #8)
