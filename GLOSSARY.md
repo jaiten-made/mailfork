@@ -41,6 +41,10 @@ _Avoid_: Real email, main email, destination
 Delivering mail sent to a Profile Address by passing a copy on to the Personal Inbox.
 _Avoid_: Relay, redirect
 
+**Backup**:
+An encrypted copy of every Profile, live and Retired, kept away from the Pi so the Profiles survive losing it. Mail is never part of a Backup, because mail is never stored.
+_Avoid_: Snapshot, export, dump
+
 **Retire**:
 What happens to a Profile Address when its Profile is deleted: it stops accepting mail and can never be issued again.
 _Avoid_: Delete address, burn, recycle
