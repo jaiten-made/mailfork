@@ -1,10 +1,10 @@
 // Outside the agreed seams: issue #9 asks for the restic Backup target to be
 // tested against a real local repository, restoring to an identical database.
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resticBackupTarget } from "./backup.ts";
 import { openProfileRegistry } from "./profile-registry.ts";
 
@@ -128,5 +128,52 @@ describe.skipIf(!hasRestic && !process.env.CI)("the restic Backup target", { tim
 
     await expect(target().backup("change", controller.signal)).rejects.toThrow();
     expect(JSON.parse(restic("snapshots", "--json"))).toEqual([]);
+  });
+});
+
+// A stand-in for restic that takes a moment to exit when killed, as restic
+// does while it removes its lock from the repository.
+describe("the restic Backup target, killed mid-run", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "private-profile-killed-"));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("settles only after a killed restic has exited", async () => {
+    const restic = join(dir, "restic");
+    writeFileSync(
+      restic,
+      [
+        "#!/bin/sh",
+        `trap 'kill $sleeper; sleep 0.3; touch "${dir}/exited"; exit 143' TERM`,
+        `touch "${dir}/started"`,
+        "sleep 30 &",
+        "sleeper=$!",
+        "wait $sleeper",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+    const target = resticBackupTarget({
+      databasePath: join(dir, "profiles.db"),
+      copyPath: join(dir, "data", "backup", "profiles.db"),
+      repository: join(dir, "repository"),
+      password: PASSWORD,
+      r2: { accessKeyId: "unused-locally", secretAccessKey: "unused-locally" },
+      cacheDir: join(dir, "cache"),
+      restic,
+    });
+    const controller = new AbortController();
+
+    const check = target.check({ readDataSubset: false }, controller.signal);
+    await vi.waitFor(() => expect(existsSync(join(dir, "started"))).toBe(true));
+    controller.abort(new Error("restic check took longer than 5 minutes"));
+
+    await expect(check).rejects.toThrow();
+    expect(existsSync(join(dir, "exited"))).toBe(true);
   });
 });

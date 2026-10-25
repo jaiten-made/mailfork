@@ -171,9 +171,15 @@ export function resticBackupTarget(options: {
       child.stderr.setEncoding("utf8").on("data", (chunk: string) => {
         stderr = (stderr + chunk).slice(-2000);
       });
-      // An aborted signal kills restic, then rejects here.
-      child.on("error", reject);
+      // An aborted signal kills restic and reports an error at once, but
+      // restic still holds the repository lock until it exits. Settling
+      // only on close keeps the next run from finding the lock.
+      let failure: Error | undefined;
+      child.on("error", (error) => {
+        failure = error;
+      });
       child.on("close", (code) => {
+        if (failure) return reject(failure);
         if (code === 0) return resolve();
         const lastLine = stderr.trim().split("\n").at(-1) ?? "";
         const reason = (code !== null && RESTIC_EXIT_REASONS[code]) || `restic exited with ${code}`;
