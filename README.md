@@ -2,6 +2,10 @@
 
 Separate identities (Profiles), each with its own email address on a dedicated Profile Domain. Mail to a live Profile Address is forwarded to the Owner's Personal Inbox; mail to a Retired or never-issued address bounces. Cloudflare receives the mail and a home server holds the Profiles (ADR 0002). Terms are defined in `GLOSSARY.md`.
 
+![The admin app: a form to create a Profile, the live Profiles with their addresses, and a Retired Profile](docs/images/admin.png)
+
+The admin app lists each live Profile with its Label and Profile Address, ready to copy. Retired Profiles stay listed, struck through, so their addresses are never issued again. The data shown is made up.
+
 ## Layout
 
 - `apps/email-worker`: the Cloudflare Email Worker that forwards or rejects each message.
