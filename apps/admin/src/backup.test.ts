@@ -36,7 +36,7 @@ describe.skipIf(!hasRestic && !process.env.CI)("the restic Backup target", { tim
   }
 
   beforeAll(() => {
-    emptyRepository = join(mkdtempSync(join(tmpdir(), "private-profile-repository-")), "repository");
+    emptyRepository = join(mkdtempSync(join(tmpdir(), "mailfork-repository-")), "repository");
     resticAt(emptyRepository, "init");
   });
 
@@ -58,7 +58,7 @@ describe.skipIf(!hasRestic && !process.env.CI)("the restic Backup target", { tim
   const running = () => new AbortController().signal;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "private-profile-backup-"));
+    dir = mkdtempSync(join(tmpdir(), "mailfork-backup-"));
     databasePath = join(dir, "profiles.db");
     repository = join(dir, "repository");
     const registry = openProfileRegistry(databasePath);
@@ -137,7 +137,7 @@ describe("the restic Backup target, killed mid-run", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "private-profile-killed-"));
+    dir = mkdtempSync(join(tmpdir(), "mailfork-killed-"));
   });
 
   afterEach(() => {

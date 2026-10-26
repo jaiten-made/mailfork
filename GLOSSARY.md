@@ -1,4 +1,4 @@
-# Private Profile
+# MailFork
 
 Lets one person hold several separate identities (Profiles), each with its own email address, so the services they deal with can't link those identities to each other or to the person.
 

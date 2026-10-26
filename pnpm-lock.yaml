@@ -20,7 +20,7 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.13)
-      '@private-profile/shared':
+      '@mailfork/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       hono:
@@ -36,7 +36,7 @@ importers:
 
   apps/email-worker:
     dependencies:
-      '@private-profile/shared':
+      '@mailfork/shared':
         specifier: workspace:*
         version: link:../../packages/shared
     devDependencies:

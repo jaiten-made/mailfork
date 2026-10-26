@@ -3,7 +3,7 @@ import {
   generateLocalPart,
   normaliseAddress,
   type RandomSource,
-} from "@private-profile/shared";
+} from "@mailfork/shared";
 import { readFileSync } from "node:fs";
 import { Hono, type Context } from "hono";
 import { secureHeaders } from "hono/secure-headers";

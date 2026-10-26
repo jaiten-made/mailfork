@@ -202,7 +202,7 @@ finish() {
 # (Backups). Runbooks: docs/provisioning.md and docs/deployment.md.
 #
 # Non-secret settings go to deploy/admin.env (ignored by git), to copy to the
-# server as /etc/private-profile/admin.env. Tokens never pass through this script:
+# server as /etc/mailfork/admin.env. Tokens never pass through this script:
 # they go from Cloudflare to the Owner's password manager, then to the server.
 # The one exception is `restic init`, which gets the R2 key pair in its
 # environment and nowhere else; nothing is saved.
@@ -210,7 +210,7 @@ finish() {
 cd "$(git rev-parse --show-toplevel)"
 ENV_FILE=deploy/admin.env
 SEED_LOCAL_PART=seed-test
-BACKUP_BUCKET=private-profile-backups
+BACKUP_BUCKET=mailfork-backups
 
 wrangler() { pnpm --dir apps/email-worker exec wrangler "$@"; }
 # For commands that need the KV binding, once scripts/worker-config.sh has
@@ -244,7 +244,7 @@ TOTAL_STAGES=13
 
 [[ -f "$ENV_FILE" ]] || (umask 077 && cp deploy/admin.env.example "$ENV_FILE")
 
-banner "Cloudflare setup for Private Profile"
+banner "Cloudflare setup for MailFork"
 
 stage "Register the Profile Domain"
 say "A new, unremarkable domain used for nothing else. Nothing in it should"
@@ -313,7 +313,7 @@ pause "Press Enter if PERSONAL_INBOX is listed above."
 stage "Route all mail to the Worker"
 open_url "https://developers.cloudflare.com/email-routing/email-workers/enable-email-workers/"
 step "In Email Routing > Routing rules, edit the Catch-all address."
-step "Set the action to Send to a Worker, pick private-profile-email, and save."
+step "Set the action to Send to a Worker, pick mailfork-email, and save."
 step "Then switch the catch-all's status toggle to Enabled. It's off by default."
 warn "Don't add per-address rules: the Worker and KV make every decision."
 pause "Press Enter once the catch-all is enabled."
@@ -339,11 +339,11 @@ pause
 stage "Create the admin app's API token"
 say "The admin app writes, lists and deletes KV keys to mirror the Profiles."
 open_url "https://dash.cloudflare.com/profile/api-tokens"
-step "Create Token > Create Custom Token, named private-profile-admin."
+step "Create Token > Create Custom Token, named mailfork-admin."
 step "Permissions: Account > Workers KV Storage > Edit."
 step "Account Resources: Include > your account only."
 step "Create it and save the token in your password manager."
-warn "Don't paste it here. It goes on the server as /etc/private-profile/cloudflare-api-token."
+warn "Don't paste it here. It goes on the server as /etc/mailfork/cloudflare-api-token."
 pause "Press Enter once it's in your password manager."
 
 stage "Create the tunnel"
@@ -357,13 +357,13 @@ done
 open_url "https://one.dash.cloudflare.com"
 note "If asked, activate the Zero Trust Free plan. Keep the team name bland:"
 note "it shows on the sign-in page."
-step "Go to Networks > Tunnels and create a cloudflared tunnel named private-profile."
+step "Go to Networks > Tunnels and create a cloudflared tunnel named mailfork."
 step "For the environment, pick Docker and copy only the token after --token into"
 step "your password manager. Don't run the command."
 note "If Continue stays greyed out, go back to Tunnels: the tunnel already exists."
 step "Open the tunnel > Routes > add a Published application route:"
 step "$ADMIN_HOSTNAME, service URL http://admin:8080."
-warn "Don't paste the token here. It goes on the server as /etc/private-profile/tunnel-token."
+warn "Don't paste the token here. It goes on the server as /etc/mailfork/tunnel-token."
 pause "Press Enter once the hostname is added."
 
 stage "Protect it with Access"
@@ -386,7 +386,7 @@ say "encrypted on the server before upload (docs/adr/0003)."
 open_url "https://dash.cloudflare.com"
 step "Go to R2 Object Storage > Create bucket, named $BACKUP_BUCKET. Keep the defaults."
 step "Back on R2 Object Storage, open Manage API tokens > Create Account API token,"
-step "named private-profile-backups."
+step "named mailfork-backups."
 step "Permissions: Object Read & Write. Apply to specific buckets only: $BACKUP_BUCKET."
 step "Create it and save the Access Key ID and Secret Access Key in your password manager."
 step "In your password manager, also generate a long random restic password."

@@ -1,5 +1,5 @@
 {
-  "name": "@private-profile/email-worker",
+  "name": "@mailfork/email-worker",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -9,7 +9,7 @@
     "deploy": "../../scripts/worker-config.sh && wrangler deploy -c wrangler.local.jsonc"
   },
   "dependencies": {
-    "@private-profile/shared": "workspace:*"
+    "@mailfork/shared": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261015.1",

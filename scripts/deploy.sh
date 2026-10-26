@@ -7,7 +7,7 @@
 #   DEPLOY_HOST=user@server scripts/deploy.sh 2026.10.2    # a release tag
 #
 # DEPLOY_HOST is the SSH destination and is required. DEPLOY_DIR is the
-# checkout on the server (default ~/private-profile).
+# checkout on the server (default ~/mailfork).
 set -euo pipefail
 
 ref="${1:-main}"
@@ -16,7 +16,7 @@ if [[ -z "${DEPLOY_HOST:-}" ]]; then
   exit 1
 fi
 host="$DEPLOY_HOST"
-dir="${DEPLOY_DIR:-~/private-profile}"
+dir="${DEPLOY_DIR:-~/mailfork}"
 
 # main only takes releases, so only main or a CalVer release tag is deployed.
 if [[ "$ref" == main ]]; then

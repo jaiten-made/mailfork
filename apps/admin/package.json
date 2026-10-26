@@ -1,5 +1,5 @@
 {
-  "name": "@private-profile/admin",
+  "name": "@mailfork/admin",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
-    "@private-profile/shared": "workspace:*",
+    "@mailfork/shared": "workspace:*",
     "hono": "^4.13.13",
     "jose": "^6.2.13"
   },

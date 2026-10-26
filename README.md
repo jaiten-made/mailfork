@@ -1,8 +1,8 @@
-# mailfork
+# MailFork
 
 Separate identities (Profiles), each with its own email address on a dedicated Profile Domain, so the services you sign up with can't link them to each other or to you. Mail to a live Profile Address is forwarded to your Personal Inbox. Mail to a Retired or never-issued address bounces. You create, rename and Retire Profiles from a small admin app on your own server. Terms are defined in `GLOSSARY.md`.
 
-The code and docs call the product Private Profile. You run your own copy, with one Owner per deployment.
+You run your own copy, with one Owner per deployment.
 
 ## What it hides, and what it doesn't
 

@@ -205,7 +205,7 @@ export function resticBackupTarget(options: {
         source.close();
       }
       signal.throwIfAborted();
-      await restic(["backup", "--tag", tag, "--host", "private-profile", options.copyPath], signal);
+      await restic(["backup", "--tag", tag, "--host", "mailfork", options.copyPath], signal);
     },
 
     async check({ readDataSubset }, signal) {

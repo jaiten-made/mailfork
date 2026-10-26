@@ -53,15 +53,15 @@ pnpm exec wrangler secret put PERSONAL_INBOX -c wrangler.local.jsonc
 
 Type the Personal Inbox address at the prompt. It goes only into the Worker secret, never into git or a shell history. `SYSTEM_ADDRESSES` (`postmaster,abuse`) is already in `wrangler.jsonc`.
 
-**Check:** `pnpm exec wrangler secret list -c wrangler.local.jsonc` shows `PERSONAL_INBOX`, and the Worker `private-profile-email` appears under **Workers & Pages**.
+**Check:** `pnpm exec wrangler secret list -c wrangler.local.jsonc` shows `PERSONAL_INBOX`, and the Worker `mailfork-email` appears under **Workers & Pages**.
 
 ## 6. Route all mail to the Worker
 
 Docs: <https://developers.cloudflare.com/email-routing/email-workers/enable-email-workers/>
 
-In **Email Routing → Routing rules**, edit the **Catch-all address**: set the action to **Send to a Worker**, pick `private-profile-email`, and enable the rule. Don't add per-address custom rules: every decision belongs to the Worker and KV.
+In **Email Routing → Routing rules**, edit the **Catch-all address**: set the action to **Send to a Worker**, pick `mailfork-email`, and enable the rule. Don't add per-address custom rules: every decision belongs to the Worker and KV.
 
-**Check:** the catch-all rule is enabled and points at `private-profile-email`.
+**Check:** the catch-all rule is enabled and points at `mailfork-email`.
 
 ## 7. Seed a test address
 

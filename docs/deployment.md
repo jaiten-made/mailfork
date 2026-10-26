@@ -12,7 +12,7 @@ The Owner chose a subdomain of the Profile Domain over a separate domain. The tr
 
 ## 2. Create the tunnel
 
-1. In Zero Trust, go to **Networks > Tunnels** and create a `cloudflared` tunnel named `private-profile`. Activate the Zero Trust Free plan first if asked, and keep the team name bland: it shows on the sign-in page.
+1. In Zero Trust, go to **Networks > Tunnels** and create a `cloudflared` tunnel named `mailfork`. Activate the Zero Trust Free plan first if asked, and keep the team name bland: it shows on the sign-in page.
 2. Pick **Docker** as the environment and copy the token after `--token` from the install command. Don't run that command; Compose runs `cloudflared`. The environment choice only changes the instructions shown.
 3. If **Continue** stays greyed out, go back to **Tunnels**: the tunnel already exists once it's named.
 4. Open the tunnel, go to **Routes**, and add a **Published application** route: the admin hostname from step 1, service URL `http://admin:8080`. Cloudflare creates the DNS record.
@@ -28,40 +28,40 @@ The Owner chose a subdomain of the Profile Domain over a separate domain. The tr
 
 Each Backup is stored as a restic snapshot of the Profile database in R2, encrypted on the server before upload (ADR 0003).
 
-1. In the Cloudflare dashboard, go to **R2 Object Storage > Create bucket** and name it `private-profile-backups`.
-2. Under **Manage API tokens**, create an **Account API token** named `private-profile-backups` with **Object Read & Write** permission, applied to that bucket only. Save its **Access Key ID** and **Secret Access Key** in the password manager.
+1. In the Cloudflare dashboard, go to **R2 Object Storage > Create bucket** and name it `mailfork-backups`.
+2. Under **Manage API tokens**, create an **Account API token** named `mailfork-backups` with **Object Read & Write** permission, applied to that bucket only. Save its **Access Key ID** and **Secret Access Key** in the password manager.
 3. Generate a long random restic password in the password manager. Without it the Backups can't be read, so it must not live only on the server.
-4. The repository is `s3:https://<account id>.r2.cloudflarestorage.com/private-profile-backups`. It goes in `admin.env` as `RESTIC_REPOSITORY`.
+4. The repository is `s3:https://<account id>.r2.cloudflarestorage.com/mailfork-backups`. It goes in `admin.env` as `RESTIC_REPOSITORY`.
 
 `scripts/setup-cloudflare.sh` walks through steps 1 to 4 and saves the settings to `deploy/admin.env`. If `restic` is installed where the wizard runs, it also creates the restic repository, so step 7 can be skipped.
 
 ## 5. Put the settings and secrets on the server
 
-They live in `/etc/private-profile`, outside git. The source of truth for every token and password is the Owner's password manager.
+They live in `/etc/mailfork`, outside git. The source of truth for every token and password is the Owner's password manager.
 
 ```sh
-sudo install -d -m 750 -o root -g "$USER" /etc/private-profile
+sudo install -d -m 750 -o root -g "$USER" /etc/mailfork
 # deploy/admin.env from the wizard, copied over with scp, or filled in from deploy/admin.env.example
-sudo install -m 444 /tmp/admin.env /etc/private-profile/admin.env && rm /tmp/admin.env
-sudoedit /etc/private-profile/tunnel-token           # the token from step 2
-sudoedit /etc/private-profile/cloudflare-api-token   # the KV token from issue #3
-sudoedit /etc/private-profile/restic-password        # the restic password from step 4
-sudoedit /etc/private-profile/r2-access-key-id       # the R2 Access Key ID from step 4
-sudoedit /etc/private-profile/r2-secret-access-key   # the R2 Secret Access Key from step 4
-sudo chmod 444 /etc/private-profile/*
+sudo install -m 444 /tmp/admin.env /etc/mailfork/admin.env && rm /tmp/admin.env
+sudoedit /etc/mailfork/tunnel-token           # the token from step 2
+sudoedit /etc/mailfork/cloudflare-api-token   # the KV token from issue #3
+sudoedit /etc/mailfork/restic-password        # the restic password from step 4
+sudoedit /etc/mailfork/r2-access-key-id       # the R2 Access Key ID from step 4
+sudoedit /etc/mailfork/r2-secret-access-key   # the R2 Secret Access Key from step 4
+sudo chmod 444 /etc/mailfork/*
 ```
 
 Only root and the user who runs `docker compose` can open the directory: Compose reads `admin.env` as that user. That user is in the `docker` group, which is root-equivalent anyway. The files themselves must stay readable by any user (`444`): Compose mounts them into containers that run as non-root users (`node` and `cloudflared`'s `nonroot`), which can't read a `400` file owned by root.
 
-To keep them somewhere else, set `PRIVATE_PROFILE_CONFIG` to that directory when running Compose.
+To keep them somewhere else, set `MAILFORK_CONFIG` to that directory when running Compose.
 
 ## 6. Get the code
 
 The server clones the repo over HTTPS. It only ever pulls, so it needs no key:
 
 ```sh
-git clone -b main https://github.com/<owner>/mailfork.git ~/private-profile
-cd ~/private-profile
+git clone -b main https://github.com/<owner>/mailfork.git ~/mailfork
+cd ~/mailfork
 ```
 
 Clone your own fork instead if you deploy changes of your own.
@@ -87,7 +87,7 @@ docker compose logs -f
 
 The admin app logs `Admin app listening on port 8080`, and `cloudflared` logs registered tunnel connections. Both services have `restart: unless-stopped`, so with Docker enabled at boot they come back after a reboot.
 
-The Profile database is in the `private-profile_admin-data` volume, at `/data/profiles.db` inside the admin container.
+The Profile database is in the `mailfork_admin-data` volume, at `/data/profiles.db` inside the admin container.
 
 The admin app takes a Backup on start-up, after every create, rename and Retire, and nightly at 03:00, followed by `restic check`. Before each Backup it copies the database with SQLite's online backup to `/data/backup/profiles.db`, and restic backs up that copy. restic's cache is in `/data/restic-cache`. A failed Backup or check shows a banner on the admin page and logs the reason.
 
@@ -105,7 +105,7 @@ To update, run `scripts/deploy.sh` from your own checkout once a release is on `
 DEPLOY_HOST=<user>@<server> scripts/deploy.sh
 ```
 
-Over SSH it moves the server's checkout to `main` (or a release tag: `scripts/deploy.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the server's checkout has local changes, and before touching the containers if a secret file from step 5 is missing. `DEPLOY_DIR` overrides the checkout path, `~/private-profile`.
+Over SSH it moves the server's checkout to `main` (or a release tag: `scripts/deploy.sh 2026.10.2`), runs `docker compose up -d --build`, then waits for the admin app to answer and checks it answers `401` without an Access JWT. It stops if the server's checkout has local changes, and before touching the containers if a secret file from step 5 is missing. `DEPLOY_DIR` overrides the checkout path, `~/mailfork`.
 
 By hand on the server, the same update is `git pull`, then `docker compose up -d --build`.
 

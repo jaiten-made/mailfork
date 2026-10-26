@@ -33,7 +33,7 @@ COPY packages/shared/package.json packages/shared/
 COPY apps/admin/package.json apps/admin/
 # Scripts are off: the root `prepare` needs git, and the admin app's
 # dependencies have no build step.
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts --filter @private-profile/admin...
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts --filter @mailfork/admin...
 
 FROM node:24-bookworm-slim
 ENV NODE_ENV=production

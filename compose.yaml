@@ -2,22 +2,22 @@
 #
 # No ports are published: cloudflared dials out to Cloudflare, and the admin
 # app is reachable only from cloudflared on this Compose network. Settings
-# and secrets live outside git in PRIVATE_PROFILE_CONFIG (default
-# /etc/private-profile); deploy/ has examples.
+# and secrets live outside git in MAILFORK_CONFIG (default
+# /etc/mailfork); deploy/ has examples.
 
-name: private-profile
+name: mailfork
 
 services:
   admin:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
-    image: private-profile-admin
+    image: mailfork-admin
     restart: unless-stopped
     # About 65 MiB in use on an arm64 server. The heap cap makes Node collect garbage
     # before the container limit kills it.
     mem_limit: 256m
-    env_file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/admin.env
+    env_file: ${MAILFORK_CONFIG:-/etc/mailfork}/admin.env
     environment:
       PORT: "8080"
       DATABASE_PATH: /data/profiles.db
@@ -50,17 +50,17 @@ services:
 
 secrets:
   cloudflare-api-token:
-    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/cloudflare-api-token
+    file: ${MAILFORK_CONFIG:-/etc/mailfork}/cloudflare-api-token
   tunnel-token:
-    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/tunnel-token
+    file: ${MAILFORK_CONFIG:-/etc/mailfork}/tunnel-token
   # Backups (docs/adr/0003). Without the restic password the Backups can't
   # be read, so its source of truth is the Owner's password manager.
   restic-password:
-    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/restic-password
+    file: ${MAILFORK_CONFIG:-/etc/mailfork}/restic-password
   r2-access-key-id:
-    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/r2-access-key-id
+    file: ${MAILFORK_CONFIG:-/etc/mailfork}/r2-access-key-id
   r2-secret-access-key:
-    file: ${PRIVATE_PROFILE_CONFIG:-/etc/private-profile}/r2-secret-access-key
+    file: ${MAILFORK_CONFIG:-/etc/mailfork}/r2-secret-access-key
 
 volumes:
   admin-data:
