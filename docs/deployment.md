@@ -60,7 +60,7 @@ To keep them somewhere else, set `PRIVATE_PROFILE_CONFIG` to that directory when
 The server clones the repo over HTTPS. It only ever pulls, so it needs no key:
 
 ```sh
-git clone -b main https://github.com/<owner>/private-profile.git ~/private-profile
+git clone -b main https://github.com/<owner>/mailfork.git ~/private-profile
 cd ~/private-profile
 ```
 
