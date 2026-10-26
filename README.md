@@ -43,6 +43,10 @@ For personal use, all of this fits Cloudflare's free tiers. You pay for the doma
 
 Your deployment's values (domain, account and namespace ids, secrets) stay in `deploy/admin.env` and on the server, never in git (ADR 0004).
 
+![The admin app: a form to create a Profile, the live Profiles with their addresses, and a Retired Profile](docs/images/admin.png)
+
+The admin app lists each live Profile with its Label and Profile Address, ready to copy. Retired Profiles stay listed, struck through, so their addresses are never issued again. The data shown is made up.
+
 ## Layout
 
 - `apps/email-worker`: the Cloudflare Email Worker that forwards or rejects each message.
