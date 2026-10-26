@@ -1,4 +1,4 @@
-import { normaliseAddress } from "@private-profile/shared";
+import { normaliseAddress } from "@mailfork/shared";
 
 export interface Env {
   /** Profile Address -> "live" | "retired". See docs/kv-address-list.md (repo root). */

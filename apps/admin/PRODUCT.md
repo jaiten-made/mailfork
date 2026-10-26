@@ -14,7 +14,7 @@ One Owner _(inferred)_: the only person who signs in. They usually reach the adm
 
 ## Product Purpose
 
-Private Profile lets the Owner hold separate Profiles, each with its own Profile Address on a dedicated Profile Domain, so services can't link those Profiles to each other or to the Owner. Mail to a live Profile Address is forwarded to the Personal Inbox. The admin app is where Profiles are created, listed, renamed and (later) Retired. Success: a new, working address is copied into a signup form in under ten seconds.
+MailFork lets the Owner hold separate Profiles, each with its own Profile Address on a dedicated Profile Domain, so services can't link those Profiles to each other or to the Owner. Mail to a live Profile Address is forwarded to the Personal Inbox. The admin app is where Profiles are created, listed, renamed and (later) Retired. Success: a new, working address is copied into a signup form in under ten seconds.
 
 ## Positioning
 

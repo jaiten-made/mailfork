@@ -1,5 +1,5 @@
 ---
-name: Private Profile admin
+name: MailFork admin
 description: A bank of private boxes on the Owner's own premises, one door per Profile.
 colors:
   wall: "#c5cad0"
@@ -155,7 +155,7 @@ components:
     padding: "20px 16px 16px"
 ---
 
-# Design System: Private Profile admin
+# Design System: MailFork admin
 
 ## Overview
 
