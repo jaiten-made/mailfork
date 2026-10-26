@@ -1,11 +1,12 @@
 {
   "name": "@private-profile/email-worker",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && wrangler deploy --dry-run --outdir dist",
     "typecheck": "tsc --noEmit",
-    "deploy": "wrangler deploy"
+    "deploy": "../../scripts/worker-config.sh && wrangler deploy -c wrangler.local.jsonc"
   },
   "dependencies": {
     "@private-profile/shared": "workspace:*"

@@ -5,7 +5,7 @@ Lets one person hold several separate identities (Profiles), each with its own e
 ## Language
 
 **Owner**:
-The person who holds Profiles. In the MVP there is only one Owner, but every Profile still belongs to an Owner.
+The person who holds Profiles. Each deployment has exactly one Owner, who runs it and holds its Profiles, and every Profile belongs to that Owner.
 _Avoid_: User, account, customer
 
 **Profile**:
