@@ -209,11 +209,13 @@ finish() {
 
 cd "$(git rev-parse --show-toplevel)"
 ENV_FILE=deploy/admin.env
-WRANGLER_CONFIG=apps/email-worker/wrangler.jsonc
 SEED_LOCAL_PART=seed-test
 BACKUP_BUCKET=private-profile-backups
 
 wrangler() { pnpm --dir apps/email-worker exec wrangler "$@"; }
+# For commands that need the KV binding, once scripts/worker-config.sh has
+# written this deployment's config.
+worker_wrangler() { wrangler "$@" -c wrangler.local.jsonc; }
 
 # ask_until KEY "Prompt" REGEX "Hint" asks until the value matches REGEX.
 ask_until() {
@@ -296,17 +298,16 @@ else
     "A namespace id is 32 lowercase hex characters."
 fi
 write_env KV_NAMESPACE_ID "$KV_NAMESPACE_ID"
-sed -i.bak -E "s/(\"id\": \")[^\"]*(\")/\1$KV_NAMESPACE_ID\2/" "$WRANGLER_CONFIG" && rm -f "$WRANGLER_CONFIG.bak"
-printf '  %s✓ wrote%s KV namespace id → %s\n' "$GREEN" "$RESET" "$WRANGLER_CONFIG"
-note "The id isn't secret: commit $WRANGLER_CONFIG on a feature branch afterwards."
+scripts/worker-config.sh
+note "The id stays out of git: wrangler.local.jsonc is ignored (ADR 0004)."
 pause
 
 stage "Deploy the Worker"
 pnpm --dir apps/email-worker run deploy
 say "Now set the Personal Inbox as a Worker secret. Type it at wrangler's"
 say "prompt: it goes only into the secret, never into git or this script."
-wrangler secret put PERSONAL_INBOX
-wrangler secret list
+worker_wrangler secret put PERSONAL_INBOX
+worker_wrangler secret list
 pause "Press Enter if PERSONAL_INBOX is listed above."
 
 stage "Route all mail to the Worker"
@@ -319,7 +320,7 @@ pause "Press Enter once the catch-all is enabled."
 
 stage "Send real mail"
 seed="$SEED_LOCAL_PART@$PROFILE_DOMAIN"
-wrangler kv key put --binding PROFILE_ADDRESSES --remote "$seed" live
+worker_wrangler kv key put --binding PROFILE_ADDRESSES --remote "$seed" live
 say "Seeded $seed as live. KV takes about a minute to reach the Worker."
 pause "Wait a minute, then press Enter."
 say "Send from an outside account, not the Personal Inbox (Gmail hides mail to yourself)."
@@ -330,7 +331,7 @@ pause
 
 stage "Delete the test address"
 say "So it never looks like an issued Profile Address."
-wrangler kv key delete --binding PROFILE_ADDRESSES --remote "$seed" ||
+worker_wrangler kv key delete --binding PROFILE_ADDRESSES --remote "$seed" ||
   warn "Couldn't delete it. The admin app's first reconcile removes it anyway."
 note "Then set up the Gmail filter from the README (Labelling Profile mail in Gmail)."
 pause

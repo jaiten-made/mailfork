@@ -44,3 +44,7 @@ Forwarded mail keeps the original `From` and `Reply-To`, so anything sent back f
 - calendar invite RSVPs.
 
 Treat the `Profile` label as "read only". Replying as a Profile is a planned feature and the real fix. Until then, the Personal Inbox's provider also sees every Profile's mail in one place.
+
+## Licence
+
+MIT, see `LICENSE`. Provided as-is: self-host it at your own risk, with no support promise. Report security problems privately, as `SECURITY.md` describes.

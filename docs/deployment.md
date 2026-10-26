@@ -57,17 +57,14 @@ To keep them somewhere else, set `PRIVATE_PROFILE_CONFIG` to that directory when
 
 ## 6. Get the code
 
-The repo is private, so the server clones it with a read-only deploy key that can't push:
+The server clones the repo over HTTPS. It only ever pulls, so it needs no key:
 
 ```sh
-ssh-keygen -t ed25519 -N '' -C 'private-profile deploy key' -f ~/.ssh/private_profile_deploy
-cat ~/.ssh/private_profile_deploy.pub   # add on GitHub: Settings > Deploy keys, write access off
-printf 'Host github.com\n  HostName github.com\n  IdentityFile ~/.ssh/private_profile_deploy\n  IdentitiesOnly yes\n' >> ~/.ssh/config
-git clone -b develop git@github.com:jaiten-made/private-profile.git ~/private-profile
+git clone -b main https://github.com/<owner>/private-profile.git ~/private-profile
 cd ~/private-profile
 ```
 
-Deploy from `main` once a release has been cut.
+Clone your own fork instead if you deploy changes of your own.
 
 ## 7. Create the restic repository
 
