@@ -1,5 +1,5 @@
 // Outside the agreed seams: start-up config isn't reachable through the
-// admin HTTP API, and on the Pi the Cloudflare API token arrives as a file.
+// admin HTTP API, and on the server the Cloudflare API token arrives as a file.
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

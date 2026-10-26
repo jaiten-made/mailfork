@@ -2,7 +2,7 @@
 
 How the Owner sets up the Profile Domain on Cloudflare and checks that real mail flows (issue #3). It needs a Cloudflare account, a card to buy the domain, and one outside mail account that is not the Personal Inbox. Do the steps in order: each one depends on the one before.
 
-`scripts/setup-cloudflare.sh` walks through these steps interactively and continues into the Cloudflare part of `docs/pi-deployment.md`.
+`scripts/setup-cloudflare.sh` walks through these steps interactively and continues into the Cloudflare part of `docs/deployment.md`.
 
 Cloudflare moves its dashboard menus around. If a menu named here has moved, the linked Cloudflare docs have the current path.
 
@@ -38,7 +38,7 @@ pnpm exec wrangler login
 pnpm exec wrangler kv namespace create PROFILE_ADDRESSES
 ```
 
-Copy the `id` it prints into `kv_namespaces[0].id` in `apps/email-worker/wrangler.jsonc`, replacing `REPLACE_WITH_KV_NAMESPACE_ID`. The id isn't a secret: commit it on a feature branch so the config in git matches what is deployed. The admin app's publisher will need the same id and the account id later.
+Save the `id` it prints as `KV_NAMESPACE_ID` in `deploy/admin.env` (copy it from `deploy/admin.env.example` if it doesn't exist yet). Don't put it in `wrangler.jsonc`: that file keeps `REPLACE_WITH_KV_NAMESPACE_ID`, so no deployment's ids land in git (ADR 0004). `scripts/worker-config.sh` writes `wrangler.local.jsonc`, which git ignores, with the id filled in, and `pnpm run deploy` runs it first. The admin app's publisher reads the same id, and the account id, from `admin.env` later.
 
 **Check:** `pnpm exec wrangler kv namespace list` shows `PROFILE_ADDRESSES` with that id.
 
@@ -48,12 +48,12 @@ Still in `apps/email-worker`:
 
 ```bash
 pnpm run deploy
-pnpm exec wrangler secret put PERSONAL_INBOX
+pnpm exec wrangler secret put PERSONAL_INBOX -c wrangler.local.jsonc
 ```
 
 Type the Personal Inbox address at the prompt. It goes only into the Worker secret, never into git or a shell history. `SYSTEM_ADDRESSES` (`postmaster,abuse`) is already in `wrangler.jsonc`.
 
-**Check:** `pnpm exec wrangler secret list` shows `PERSONAL_INBOX`, and the Worker `private-profile-email` appears under **Workers & Pages**.
+**Check:** `pnpm exec wrangler secret list -c wrangler.local.jsonc` shows `PERSONAL_INBOX`, and the Worker `private-profile-email` appears under **Workers & Pages**.
 
 ## 6. Route all mail to the Worker
 
@@ -68,7 +68,7 @@ In **Email Routing → Routing rules**, edit the **Catch-all address**: set the 
 Until the admin app is publishing, put one `live` key in KV by hand. Use a local part that the generator would never produce, so it can't clash with a real Profile later:
 
 ```bash
-pnpm exec wrangler kv key put --binding PROFILE_ADDRESSES --remote "seed-test@<profile domain>" live
+pnpm exec wrangler kv key put --binding PROFILE_ADDRESSES --remote "seed-test@<profile domain>" live -c wrangler.local.jsonc
 ```
 
 Keys are full, lowercased addresses and values are exactly `live` or `retired` (`docs/kv-address-list.md`). KV can take about a minute to reach the Worker, so wait before step 8.
@@ -90,7 +90,7 @@ If mail doesn't arrive, look at **Email Routing → Activity log** first: it sho
 Delete the test key, so it never looks like an issued Profile Address:
 
 ```bash
-pnpm exec wrangler kv key delete --binding PROFILE_ADDRESSES --remote "seed-test@<profile domain>"
+pnpm exec wrangler kv key delete --binding PROFILE_ADDRESSES --remote "seed-test@<profile domain>" -c wrangler.local.jsonc
 ```
 
 The admin app's full reconcile would also remove it, since it deletes keys not in the registry. Then set up the Gmail filter from the README.

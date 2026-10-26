@@ -5,8 +5,8 @@ Read during review. These are judgement calls; mechanical rules live in `pnpm ch
 ## Privacy
 
 - **One rejection reason.** Every rejected recipient gets the same `setReject()` reason, so a sender can't tell a Retired Address from one never issued, or either from a malformed one.
-- **The Personal Inbox stays private.** Its address lives only in the Worker's `PERSONAL_INBOX` secret and on the Pi. It never appears in git, Workers KV, forwarded headers, logs or error messages. Tests use `example` domains.
-- **KV holds status only.** Values are `live` or `retired`, nothing else (see `docs/kv-address-list.md`). Labels, Profile ids and timestamps stay on the Pi.
+- **The Personal Inbox stays private.** Its address lives only in the Worker's `PERSONAL_INBOX` secret and on the server. It never appears in git, Workers KV, forwarded headers, logs or error messages. Tests use `example` domains.
+- **KV holds status only.** Values are `live` or `retired`, nothing else (see `docs/kv-address-list.md`). Labels, Profile ids and timestamps stay on the server.
 
 ## Language
 

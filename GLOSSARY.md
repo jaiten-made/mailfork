@@ -5,7 +5,7 @@ Lets one person hold several separate identities (Profiles), each with its own e
 ## Language
 
 **Owner**:
-The person who holds Profiles. In the MVP there is only one Owner, but every Profile still belongs to an Owner.
+The person who holds Profiles. Each deployment has exactly one Owner, who runs it and holds its Profiles, and every Profile belongs to that Owner.
 _Avoid_: User, account, customer
 
 **Profile**:
@@ -42,7 +42,7 @@ Delivering mail sent to a Profile Address by passing a copy on to the Personal I
 _Avoid_: Relay, redirect
 
 **Backup**:
-An encrypted copy of every Profile, live and Retired, kept away from the Pi so the Profiles survive losing it. Mail is never part of a Backup, because mail is never stored.
+An encrypted copy of every Profile, live and Retired, kept away from the server so the Profiles survive losing it. Mail is never part of a Backup, because mail is never stored.
 _Avoid_: Snapshot, export, dump
 
 **Retire**:

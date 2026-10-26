@@ -10,8 +10,8 @@
     {
       // Value format: docs/kv-address-list.md
       "binding": "PROFILE_ADDRESSES",
-      // From `pnpm exec wrangler kv namespace create PROFILE_ADDRESSES`.
-      // Not a secret. The admin app's KV_NAMESPACE_ID must match it.
+      // Stays a placeholder in git (ADR 0004). scripts/worker-config.sh
+      // writes wrangler.local.jsonc with KV_NAMESPACE_ID from deploy/admin.env.
       "id": "REPLACE_WITH_KV_NAMESPACE_ID"
     }
   ],

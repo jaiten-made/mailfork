@@ -34,7 +34,7 @@
       "label": "Midnight Transit Diagram",
       "verdict": "competitive",
       "lineage": "Metro maps fired as enamel murals",
-      "thesis": "Mail's route from Cloudflare to the Pi to your inbox is a line on a diagram, and every state is service status.",
+      "thesis": "Mail's route from Cloudflare to the server to your inbox is a line on a diagram, and every state is service status.",
       "palette": ["#0f1a3a", "#f4f5f0", "#e03a3e", "#2f6fe4", "#f2b632", "#2fa36b"],
       "materials": ["midnight enamel", "porcelain station ticks", "coloured line inks"],
       "viewport": "Midnight shell with the create field on top; a single route line shows sync health (live, arriving in about a minute, suspended); Profiles listed as stations on their line.",

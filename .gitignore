@@ -2,8 +2,10 @@ node_modules/
 dist/
 .wrangler/
 .dev.vars
+# A deployment's Worker config, written by scripts/worker-config.sh.
+wrangler.local.jsonc
 deploy/secrets/
-# Pi settings and secrets, if kept in the repo checkout for testing.
+# Server settings and secrets, if kept in the repo checkout for testing.
 admin.env
 tunnel-token
 cloudflare-api-token

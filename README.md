@@ -1,6 +1,6 @@
 # Private Profile
 
-Separate identities (Profiles), each with its own email address on a dedicated Profile Domain. Mail to a live Profile Address is forwarded to the Owner's Personal Inbox; mail to a Retired or never-issued address bounces. Cloudflare receives the mail and a Raspberry Pi holds the Profiles (ADR 0002). Terms are defined in `GLOSSARY.md`.
+Separate identities (Profiles), each with its own email address on a dedicated Profile Domain. Mail to a live Profile Address is forwarded to the Owner's Personal Inbox; mail to a Retired or never-issued address bounces. Cloudflare receives the mail and a home server holds the Profiles (ADR 0002). Terms are defined in `GLOSSARY.md`.
 
 ## Layout
 
@@ -21,7 +21,7 @@ pnpm check
 
 Follow `docs/provisioning.md` to register the Profile Domain, turn on Email Routing, deploy the Worker and send the first real mail.
 
-`scripts/setup-cloudflare.sh` walks through the same steps, plus the API token, tunnel, Access application and Backup bucket from `docs/pi-deployment.md`. It opens each page, runs the `wrangler` commands and saves the non-secret settings to `deploy/admin.env`. Tokens never pass through it, except the R2 key pair, which it hands straight to `restic init` without saving.
+`scripts/setup-cloudflare.sh` walks through the same steps, plus the API token, tunnel, Access application and Backup bucket from `docs/deployment.md`. It opens each page, runs the `wrangler` commands and saves the non-secret settings to `deploy/admin.env`. Tokens never pass through it, except the R2 key pair, which it hands straight to `restic init` without saving.
 
 ## Labelling Profile mail in Gmail
 
@@ -44,3 +44,7 @@ Forwarded mail keeps the original `From` and `Reply-To`, so anything sent back f
 - calendar invite RSVPs.
 
 Treat the `Profile` label as "read only". Replying as a Profile is a planned feature and the real fix. Until then, the Personal Inbox's provider also sees every Profile's mail in one place.
+
+## Licence
+
+MIT, see `LICENSE`. Provided as-is: self-host it at your own risk, with no support promise. Report security problems privately, as `SECURITY.md` describes.

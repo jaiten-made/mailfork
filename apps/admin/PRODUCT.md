@@ -18,7 +18,7 @@ Private Profile lets the Owner hold separate Profiles, each with its own Profile
 
 ## Positioning
 
-Unlike hosted forwarding services, the Profiles live only on the Owner's own Raspberry Pi; Cloudflare only learns which addresses exist and whether they are live (ADR 0002, docs/kv-address-list.md).
+Unlike hosted forwarding services, the Profiles live only on the Owner's own server; Cloudflare only learns which addresses exist and whether they are live (ADR 0002, docs/kv-address-list.md).
 
 ## Operating Context
 
@@ -44,7 +44,7 @@ No real Profiles, screenshots or assets. Fixtures use `example` domains, such as
 ## Product Principles
 
 1. Seconds to a working address: the create path beats everything else on the page.
-2. Never reveal more than needed: Labels and the Personal Inbox stay on the Pi.
+2. Never reveal more than needed: Labels and the Personal Inbox stay on the server.
 3. Be honest about timing: say when an address is not working yet.
 
 ## Accessibility & Inclusion
